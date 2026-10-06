@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Region } from '../../shared/types.ts';
-import { BANDS, psiBand } from '../../shared/bands.ts';
+import type { ScaleSpec } from '../../shared/scale.ts';
 import { useHistory } from '../api.ts';
 import { fmtDay, fmtMonth, todaySgt } from '../format.ts';
 
@@ -32,12 +32,12 @@ function monthLabels(cells: Cell[]): { col: number; text: string }[] {
   return starts;
 }
 
-export function Calendar({ region, tick }: { region: Region; tick: number }) {
-  const points = useHistory('90d', 'psi_twenty_four_hourly', region, tick);
+export function Calendar({ region, tick, spec }: { region: Region; tick: number; spec: ScaleSpec }) {
+  const points = useHistory('90d', spec.history.metric, region, tick);
   const [picked, setPicked] = useState<{ date: string; value: number } | null>(null);
   if (!points || points.length === 0) return null;
 
-  const byDate = new Map(points.map((p) => [p.ts, p.value]));
+  const byDate = new Map(points.map((p) => [p.ts, spec.history.convert(p.value)]));
   const cells = buildCells(points[points.length - 1].ts, byDate);
   const today = todaySgt();
   return (
@@ -49,13 +49,13 @@ export function Calendar({ region, tick }: { region: Region; tick: number }) {
           if (!c.inRange) return <span key={c.date} className="cell out" />;
           if (c.value === undefined) return <span key={c.date} className={`cell empty${cls}`} title={`${fmtDay(c.date)}: no data`} />;
           const v = Math.round(c.value);
-          const label = `${fmtDay(c.date)}: PSI ${v}, ${psiBand(v).label.toLowerCase()}`;
+          const label = `${fmtDay(c.date)}: ${spec.name} ${v}, ${spec.band(v).label.toLowerCase()}`;
           return (
             <button
               key={c.date}
               type="button"
               className={`cell${cls}`}
-              style={{ background: `var(--cell-${psiBand(v).key})` }}
+              style={{ background: `var(--cell-${spec.band(v).key})` }}
               title={label}
               aria-label={label}
               onClick={() => setPicked({ date: c.date, value: v })}
@@ -67,11 +67,11 @@ export function Calendar({ region, tick }: { region: Region; tick: number }) {
         {monthLabels(cells).map((m) => <span key={m.col} style={{ gridColumn: m.col + 1 }}>{m.text}</span>)}
       </div>
       <p className="caption" aria-live="polite">
-        {picked ? `${fmtDay(picked.date)}: PSI ${picked.value}, ${psiBand(picked.value).label.toLowerCase()}` : 'Daily mean PSI. Tap a day to see its value.'}
+        {picked ? `${fmtDay(picked.date)}: ${spec.name} ${picked.value}, ${spec.band(picked.value).label.toLowerCase()}` : `${spec.dayCaption} Tap a day to see its value.`}
       </p>
       <ul className="legend">
-        {BANDS.map((b) => (
-          <li key={b.key}><span className="swatch" style={{ background: `var(--cell-${b.key})` }} />{b.label}</li>
+        {spec.legend.map((b) => (
+          <li key={b.label}><span className="swatch" style={{ background: `var(--cell-${b.key})` }} />{b.label}</li>
         ))}
       </ul>
     </section>

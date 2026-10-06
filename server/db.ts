@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import type { Reading, Region } from '../shared/types.ts';
+import { nowcast } from '../shared/aqi.ts';
 
 export type NowResponse = { ts: string | null; ageMinutes: number | null; regions: Partial<Record<Region, Record<string, number>>> };
 export type HistoryPoint = { ts: string; region: Region; value: number };
@@ -54,6 +55,25 @@ export function openDb(path: string): Store {
         .all(sgtIso(Date.parse(top.ts) - 7 * 24 * HOUR)) as { region: Region; metric: string; value: number }[];
       const regions: NowResponse['regions'] = {};
       for (const x of rows) (regions[x.region] ??= {})[x.metric] = x.value;
+
+      // pm25_nowcast (µg/m³): EPA NowCast over the last 12 hours of hourly PM2.5, counted back from the newest hour in the db.
+      const newestPm = (db.prepare("SELECT MAX(ts) AS ts FROM readings WHERE metric = 'pm25_one_hourly'").get() as { ts: string | null }).ts;
+      if (newestPm) {
+        const newestMs = Date.parse(newestPm);
+        const hourly = db
+          .prepare("SELECT region, ts, value FROM readings WHERE metric = 'pm25_one_hourly' AND ts > ?")
+          .all(sgtIso(newestMs - 12 * HOUR)) as { region: Region; ts: string; value: number }[];
+        const byRegion = new Map<Region, (number | undefined)[]>();
+        for (const p of hourly) {
+          const hours = byRegion.get(p.region) ?? [];
+          hours[Math.round((newestMs - Date.parse(p.ts)) / HOUR)] = p.value;
+          byRegion.set(p.region, hours);
+        }
+        for (const [region, hours] of byRegion) {
+          const nc = nowcast(hours);
+          if (nc !== null) (regions[region] ??= {}).pm25_nowcast = Math.floor(nc * 10 + 1e-6) / 10; // EPA truncates to 0.1
+        }
+      }
       return { ts: top.ts, ageMinutes: Math.round((nowMs - Date.parse(top.ts)) / 60000), regions };
     },
     history(range, metric, region) {
@@ -70,7 +90,7 @@ export function openDb(path: string): Store {
              GROUP BY substr(ts,1,10), region ORDER BY 1, region`,
           )
           .all(...args, first)
-          .map((p) => ({ ...p, value: Math.round(p.value as number) })) as HistoryPoint[];
+          .map((p) => ({ ...p, value: Math.round((p.value as number) * 10) / 10 })) as HistoryPoint[]; // 0.1 keeps PM2.5 daily means precise enough for AQI band edges
       }
       const cutoff = sgtIso(Date.parse(newest) - (range === '24h' ? 24 : 168) * HOUR);
       return db

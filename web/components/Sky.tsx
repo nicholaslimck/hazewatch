@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { REGIONS } from '../../shared/types.ts';
 import type { Region } from '../../shared/types.ts';
-import { BANDS } from '../../shared/bands.ts';
+import { PALETTES } from '../../shared/bands.ts';
 import type { PsiBand } from '../../shared/bands.ts';
 import { parseSavedRegion } from '../../shared/regions.ts';
+import { SCALES } from '../../shared/scale.ts';
+import type { Scale } from '../../shared/scale.ts';
 import type { HistoryPoint } from '../api.ts';
 import { regionName } from '../format.ts';
 import { HeroSimple } from './HeroSimple.tsx';
@@ -30,7 +32,7 @@ function useSkyTokens(band: PsiBand | null) {
   const dark = usePrefersDark();
   useEffect(() => {
     const s = document.documentElement.style;
-    for (const b of BANDS) {
+    for (const b of PALETTES) {
       s.setProperty(`--bar-${b.key}`, dark ? b.darkBar : b.bar);
       s.setProperty(`--cell-${b.key}`, dark ? b.darkBar : b.bar);
     }
@@ -47,14 +49,27 @@ function useSkyTokens(band: PsiBand | null) {
 type Props = {
   region: Region | null; onRegion: (r: Region) => void; onLocate: () => void;
   view: View; onView: (v: View) => void;
+  scale: Scale; onScale: (s: Scale) => void;
   band: PsiBand | null; message: string | null;
   metrics: Record<string, number> | undefined; ts: string | null; points: HistoryPoint[] | null;
   children?: ReactNode;
 };
 
-export function Sky({ region, onRegion, onLocate, view, onView, band, message, metrics, ts, points, children }: Props) {
+export function Sky({ region, onRegion, onLocate, view, onView, scale, onScale, band, message, metrics, ts, points, children }: Props) {
   useSkyTokens(band);
-  const psi = metrics?.psi_twenty_four_hourly;
+  const spec = SCALES[scale];
+  const value = metrics === undefined ? undefined : spec.value(metrics);
+  // Stands in for the scale's name on the hero's meta line, so it sits on the number it changes.
+  // Kept on screen when this scale has no reading so the user can switch back.
+  const toggle = (
+    <span className="scale-switch" role="radiogroup" aria-label="Scale">
+      {(['psi', 'aqi'] as const).map((s) => (
+        <button key={s} type="button" role="radio" aria-checked={scale === s} onClick={() => onScale(s)}>
+          {SCALES[s].name}
+        </button>
+      ))}
+    </span>
+  );
   return (
     <section className="sky" aria-label="Air quality now">
       <div className="sky-head">
@@ -84,10 +99,10 @@ export function Sky({ region, onRegion, onLocate, view, onView, band, message, m
       </div>
       {children}
       <div className="sky-body">
-        {message !== null ? <p className="quiet">{message}</p>
-          : metrics === undefined || psi === undefined || ts === null ? null
-          : view === 'simple' ? <HeroSimple psi={psi} ts={ts} points={points} />
-          : <HeroNumbers metrics={metrics} psi={psi} ts={ts} />}
+        {message !== null ? <><p className="quiet">{message}</p>{metrics !== undefined && <p className="hero-meta">{toggle}</p>}</>
+          : metrics === undefined || value === undefined || ts === null ? null
+          : view === 'simple' ? <HeroSimple value={value} spec={spec} ts={ts} points={points} toggle={toggle} />
+          : <HeroNumbers metrics={metrics} value={value} spec={spec} ts={ts} toggle={toggle} />}
       </div>
     </section>
   );

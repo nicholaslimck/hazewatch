@@ -19,9 +19,14 @@ export function verdict(psi: number): [string, string] {
   return ['Hazardous.', 'Stay indoors as much as you can.'];
 }
 
-// Thirds of the PSI band; hazardous has no upper bound, so it's treated as 301–400 and clamped.
-export function bandPosition(psi: number): 'low end' | 'middle' | 'high end' {
-  const [lo, hi] = psi <= 50 ? [0, 50] : psi <= 100 ? [51, 100] : psi <= 200 ? [101, 200] : psi <= 300 ? [201, 300] : [301, 400];
+export const PSI_EDGES = [50, 100, 200, 300, 400]; // upper edge of each band; the last band has no real top, so it's treated as ending at 400
+
+// Thirds of the band `psi` falls in; values past the last edge are clamped into the top band.
+export function bandPosition(psi: number, edges: readonly number[] = PSI_EDGES): 'low end' | 'middle' | 'high end' {
+  const found = edges.findIndex((e) => psi <= e);
+  const i = found < 0 ? edges.length - 1 : found;
+  const lo = i === 0 ? 0 : edges[i - 1] + 1;
+  const hi = edges[i];
   const d = (Math.min(Math.max(psi, lo), hi) - lo) * 3; // compare in integers: d / (hi - lo) vs 1 and 2
   return d < hi - lo ? 'low end' : d < 2 * (hi - lo) ? 'middle' : 'high end';
 }

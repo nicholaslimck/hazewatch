@@ -1,5 +1,5 @@
 export type PsiBand = {
-  key: 'good' | 'moderate' | 'unhealthy' | 'very_unhealthy' | 'hazardous';
+  key: 'good' | 'moderate' | 'unhealthy' | 'very_unhealthy' | 'severe' | 'hazardous';
   label: string; advice: string; sensitiveNote: boolean;
   // Sky tokens: color/onColor are light-theme bg/ink, dark* the dark-theme pair; bar/darkBar are the deeper bar shades.
   color: string; onColor: string; darkColor: string; darkOnColor: string; bar: string; darkBar: string;
@@ -18,6 +18,13 @@ const HAZARDOUS: PsiBand = { key: 'hazardous', label: 'Hazardous', advice: 'Mini
   color: '#86644F', onColor: '#FFF4EA', darkColor: '#3E2A22', darkOnColor: '#F3DCCF', bar: '#7A5240', darkBar: '#A0705A' };
 
 export const BANDS: readonly PsiBand[] = [GOOD, MODERATE, UNHEALTHY, VERY_UNHEALTHY, HAZARDOUS];
+
+// Sixth palette, between Very unhealthy and Hazardous. Only AQI uses it (its "Very unhealthy" band); PSI has no band here.
+export const SEVERE: PsiBand = { key: 'severe', label: 'Very unhealthy', advice: '', sensitiveNote: true,
+  color: '#A57F5D', onColor: '#2A180A', darkColor: '#5A3326', darkOnColor: '#F2D6C4', bar: '#9A5F3C', darkBar: '#B8683F' };
+
+// Every palette that needs CSS tokens (--bar-*, --cell-*).
+export const PALETTES: readonly PsiBand[] = [...BANDS, SEVERE];
 
 export function psiBand(v: number): PsiBand {
   if (v <= 50) return GOOD;

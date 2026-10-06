@@ -26,6 +26,14 @@ test('bandPosition thirds', () => {
   for (const [v, want] of cases) assert.equal(bandPosition(v), want, `psi ${v}`);
 });
 
+test('bandPosition with AQI edges', () => {
+  const edges = [50, 100, 150, 200, 300, 400];
+  const cases: [number, string][] = [
+    [101, 'low end'], [117, 'low end'], [118, 'middle'], [133, 'middle'], [134, 'high end'], [150, 'high end'], [151, 'low end'], [200, 'high end'], [201, 'low end'], [999, 'high end'],
+  ];
+  for (const [v, want] of cases) assert.equal(bandPosition(v, edges), want, `aqi ${v}`);
+});
+
 test('dominantPollutant', () => {
   assert.equal(dominantPollutant({ pm25_sub_index: 80, pm10_sub_index: 40, o3_sub_index: 20, psi_twenty_four_hourly: 99 }), 'pm25');
   assert.equal(dominantPollutant({ pm25_sub_index: 30, o3_sub_index: 55, co_sub_index: 10 }), 'o3');

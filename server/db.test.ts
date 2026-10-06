@@ -25,6 +25,28 @@ test('now uses latest per metric', () => {
   assert.equal(n.ts, hour('2026-10-05', 20));
 });
 
+test('now adds pm25_nowcast per region from hourly PM2.5', () => {
+  const db = openDb(':memory:');
+  const rs: Reading[] = [];
+  for (let h = 0; h < 12; h++) rs.push(r(hour('2026-10-05', 8 + h), 20, 'pm25_one_hourly'), r(hour('2026-10-05', 8 + h), 40, 'pm25_one_hourly', 'north'));
+  rs.push(r(hour('2026-10-05', 19), 30, 'pm25_one_hourly', 'west')); // 1 hour only: no NowCast
+  db.upsert(rs);
+  const n = db.now();
+  assert.equal(n.regions.central?.pm25_nowcast, 20);
+  assert.equal(n.regions.north?.pm25_nowcast, 40);
+  assert.equal(n.regions.west?.pm25_nowcast, undefined);
+});
+
+test('pm25_nowcast leans on recent hours when air changes fast, and ignores data older than 12 hours', () => {
+  const db = openDb(':memory:');
+  const rs: Reading[] = [r(hour('2026-10-04', 1), 500, 'pm25_one_hourly')]; // too old to count
+  for (let h = 8; h < 19; h++) rs.push(r(hour('2026-10-05', h), 10, 'pm25_one_hourly'));
+  rs.push(r(hour('2026-10-05', 19), 100, 'pm25_one_hourly'));
+  db.upsert(rs);
+  const nc = db.now().regions.central!.pm25_nowcast;
+  assert.ok(nc > 50 && nc < 60, String(nc));
+});
+
 test('ageMinutes and empty db', () => {
   const db = openDb(':memory:');
   assert.deepEqual(db.now(), { ts: null, ageMinutes: null, regions: {} });
@@ -51,6 +73,12 @@ test('history 90d returns daily mean per region', () => {
   const db = openDb(':memory:');
   db.upsert([r(hour('2026-10-05', 1), 10), r(hour('2026-10-05', 2), 20), r(hour('2026-01-01', 2), 99)]);
   assert.deepEqual(db.history('90d', 'psi_twenty_four_hourly'), [{ ts: '2026-10-05', region: 'central', value: 15 }]);
+});
+
+test('history 90d keeps one decimal in daily means', () => {
+  const db = openDb(':memory:');
+  db.upsert([r(hour('2026-10-05', 1), 9, 'pm25_one_hourly'), r(hour('2026-10-05', 2), 10, 'pm25_one_hourly'), r(hour('2026-10-05', 3), 10, 'pm25_one_hourly')]);
+  assert.equal(db.history('90d', 'pm25_one_hourly')[0].value, 9.7);
 });
 
 test('daysWithData', () => {

@@ -1,6 +1,6 @@
 # SG Air Quality Monitor
 
-A self-hosted dashboard for Singapore's air quality. It pulls PSI and PM2.5 readings for the five regions from NEA, stores them in SQLite, and serves a small web page with the current values and history.
+A self-hosted dashboard for Singapore's air quality. It pulls PSI and PM2.5 readings for the five regions from NEA, stores them in SQLite, and serves a small web page with the current values and history. A toggle switches between NEA's PSI and an AQI (US EPA scale) that the app calculates itself from the hourly PM2.5 using the EPA NowCast (not an official reading).
 
 ## Quick start
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { Region } from '../shared/types.ts';
 import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
-import { psiBand } from '../shared/bands.ts';
+import { SCALES } from '../shared/scale.ts';
+import type { Scale } from '../shared/scale.ts';
 import { getNow, useHistory } from './api.ts';
 import type { NowResponse } from './api.ts';
 import { Sky } from './components/Sky.tsx';
@@ -23,6 +24,10 @@ function loadView(): View {
   try { return localStorage.getItem('view') === 'numbers' ? 'numbers' : 'simple'; } catch { return 'simple'; }
 }
 
+function loadScale(): Scale {
+  try { return localStorage.getItem('scale') === 'aqi' ? 'aqi' : 'psi'; } catch { return 'psi'; }
+}
+
 export function App() {
   const [region, setRegion] = useState<Region | null>(loadSavedRegion);
   const [needPicker, setNeedPicker] = useState(false);
@@ -31,6 +36,8 @@ export function App() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [tick, setTick] = useState(0);
   const [view, setView] = useState<View>(loadView);
+  const [scale, setScale] = useState<Scale>(loadScale);
+  const spec = SCALES[scale];
   // Shared by the hero's trend sentence and the "Last 24 hours" chart, so it's fetched once.
   const pm25 = useHistory('24h', 'pm25_one_hourly', region, tick);
 
@@ -43,6 +50,11 @@ export function App() {
   function chooseView(v: View) {
     setView(v);
     try { localStorage.setItem('view', v); } catch { /* private mode etc. */ }
+  }
+
+  function chooseScale(s: Scale) {
+    setScale(s);
+    try { localStorage.setItem('scale', s); } catch { /* private mode etc. */ }
   }
 
   function locate() {
@@ -76,19 +88,19 @@ export function App() {
     ? data.now.ageMinutes + (Date.now() - data.at) / 60_000
     : null;
   const metrics = now !== null && now.ts !== null && region !== null ? now.regions[region] : undefined;
-  const psi = metrics?.psi_twenty_four_hourly;
-  const band = psi === undefined ? null : psiBand(Math.round(psi));
+  const value = metrics === undefined ? undefined : spec.value(metrics);
+  const band = value === undefined ? null : spec.band(Math.round(value));
   const message = now === null ? (loadFailed ? "Can't reach the server right now. Trying again shortly." : 'Loading…')
     : now.ts === null ? 'Waiting for first data from NEA'
     : region === null ? (needPicker ? null : 'Finding your region…')
-    : psi === undefined ? 'No PSI reading for this region yet'
+    : value === undefined ? `No ${spec.name} reading for this region yet`
     : null;
 
   return (
     <div className="page">
       <Sky
         region={region} onRegion={choose} onLocate={locate} view={view} onView={chooseView}
-        band={band} message={message} metrics={metrics} ts={now?.ts ?? null} points={pm25}
+        scale={scale} onScale={chooseScale} band={band} message={message} metrics={metrics} ts={now?.ts ?? null} points={pm25}
       >
         {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner ts={now.ts} />}
         {needPicker && <RegionPicker onPick={choose} />}
@@ -97,15 +109,21 @@ export function App() {
       <div className="rest">
         {now !== null && now.ts !== null && region !== null && (
           <>
-            <Regions now={now} selected={region} onPick={choose} />
+            <Regions now={now} selected={region} onPick={choose} spec={spec} />
             <div className="pair">
-              <Trend points={pm25} />
-              <Calendar key={region} region={region} tick={tick} />
+              <Trend points={pm25} bandLines={spec.trendLines} caption={spec.trendCaption} />
+              <Calendar key={`${region}-${scale}`} region={region} tick={tick} spec={spec} />
             </div>
           </>
         )}
         <footer className="footer">
-          {band && <p>NEA advice: {band.advice}.{band.sensitiveNote && SENSITIVE}</p>}
+          {band && <p>{spec.source} advice: {band.advice}.{band.sensitiveNote && SENSITIVE}</p>}
+          {scale === 'aqi' && (
+            <p>
+              AQI here is the US EPA index, worked out from NEA's hourly PM2.5 using NowCast, a weighted average of the last 12 hours.
+              It reacts faster than PSI and is not an official reading.
+            </p>
+          )}
           <p>Data: NEA via <a href="https://data.gov.sg">data.gov.sg</a></p>
         </footer>
       </div>

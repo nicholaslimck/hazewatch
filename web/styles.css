@@ -80,6 +80,18 @@ button { cursor: pointer; }
   min-height: 36px; padding: 0 14px; font-size: 13px; font-weight: 600;
 }
 .toggle button[aria-checked='true'] { background: var(--sky-ink); color: var(--sky); }
+/* Scale switch: small and outline-only so it reads as part of the meta line, not a second header control. */
+.scale-switch {
+  display: inline-flex; vertical-align: 1px; padding: 1px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+}
+.scale-switch button {
+  position: relative; background: transparent; border: 0; border-radius: 999px;
+  padding: 1px 9px; font-size: 13px; font-weight: 600; line-height: 1.4;
+}
+.scale-switch button::after { content: ''; position: absolute; inset: -11px 0; } /* 44px-tall tap area */
+.scale-switch button[aria-checked='true'] { background: var(--sky-ink); color: var(--sky); }
+.scale-switch button:focus-visible { outline: 2px solid var(--sky-ink); outline-offset: 2px; }
 :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .toggle button:focus-visible { outline-color: var(--sky-ink); }
 
@@ -100,6 +112,9 @@ button { cursor: pointer; }
 .pol dt { font-size: 12px; }
 .pol-big { font-size: 20px; }
 .pol-unit { font-size: 11px; }
+.pol-sub { display: block; font-size: 11px; }
+.pol-head { font-size: 12px; margin-top: 18px; opacity: 0.85; }
+.pol-head + .pol { margin-top: 8px; }
 
 /* Quiet bars: messages, stale banner, picker */
 .quiet, .banner, .picker {
@@ -129,7 +144,9 @@ button { cursor: pointer; }
 .chart svg { display: block; width: 100%; height: 120px; overflow: visible; }
 .chart .line { stroke: var(--ink); }
 .chart .ref { stroke: var(--line); stroke-width: 1px; }
-.ref-label { position: absolute; right: 0; transform: translateY(-100%); font-size: 10px; color: var(--muted); }
+/* Band labels sit under the plot (svg is raised above them) so the data line is never hidden by a label. */
+.chart svg { position: relative; z-index: 1; }
+.ref-label { position: absolute; left: 0; transform: translateY(-100%); padding-bottom: 1px; font-size: 11px; color: var(--muted); }
 .ticks { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--muted); }
 
 /* Last 90 days */
