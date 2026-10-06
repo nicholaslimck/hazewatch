@@ -52,11 +52,12 @@ export function fitFont(widthAt: (px: number) => number, start: number, max: num
 export const makeCardFile = async (o: CardOpts) =>
   new File([await drawCard(o)], shareFilename(o.region, o.ts), { type: 'image/png' });
 
+// Link goes in the text: iOS drops the files when url is passed too.
 // No await before navigator.share: keeps the tap's user gesture alive on iOS Safari.
 export async function shareFile(file: File, text: string, publicUrl: string | null): Promise<'shared' | 'downloaded' | 'cancelled'> {
   if (shareMode(navigator, file) === 'files') {
     try {
-      await navigator.share({ files: [file], text, ...(publicUrl ? { url: publicUrl } : {}) });
+      await navigator.share({ files: [file], text: publicUrl ? `${text} ${publicUrl}` : text });
       return 'shared';
     } catch (e) {
       if (isCancel(e)) return 'cancelled';
