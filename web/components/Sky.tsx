@@ -50,12 +50,12 @@ type Props = {
   region: Region | null; onRegion: (r: Region) => void; onLocate: () => void; onShare: () => void;
   view: View; onView: (v: View) => void;
   scale: Scale; onScale: (s: Scale) => void;
-  band: PsiBand | null; message: string | null;
+  band: PsiBand | null; message: string | null; notice?: string | null;
   metrics: Record<string, number> | undefined; ts: string | null; points: HistoryPoint[] | null;
   children?: ReactNode;
 };
 
-export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, metrics, ts, points, children }: Props) {
+export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, metrics, ts, points, children }: Props) {
   useSkyTokens(band);
   const spec = SCALES[scale];
   const value = metrics === undefined ? undefined : spec.value(metrics);
@@ -111,6 +111,7 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
           : metrics === undefined || value === undefined || ts === null ? null
           : view === 'simple' ? <HeroSimple value={value} spec={spec} ts={ts} points={points} toggle={toggle} />
           : <HeroNumbers metrics={metrics} value={value} spec={spec} ts={ts} toggle={toggle} />}
+        {notice && <p className="quiet" role="status">{notice}</p>}
       </div>
     </section>
   );

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCALES } from '../shared/scale.ts';
-import { shareText, shareFilename, shareMode, isCancel } from './share.ts';
+import { shareText, shareFilename, shareMode, isCancel, fitFont } from './share.ts';
 
 test('shareText for PSI and AQI', () => {
   assert.equal(shareText(SCALES.psi, 'central', 135), 'Central PSI 135, unhealthy. Skip the long run today.');
@@ -21,6 +21,13 @@ test('shareMode picks download without canShare', () => {
   const f = new File([''], 'a.png', { type: 'image/png' });
   assert.equal(shareMode({}, f), 'download');
   assert.equal(shareMode({ canShare: () => false }, f), 'download');
+});
+
+test('fitFont shrinks to fit and stops at the floor', () => {
+  const w = (px: number) => px * 10;
+  assert.equal(fitFont(w, 72, 904, 40), 72); // 720 fits
+  assert.equal(fitFont(w, 120, 904, 40), 90);
+  assert.equal(fitFont(w, 120, 100, 40), 40);
 });
 
 test('isCancel recognises AbortError', () => {

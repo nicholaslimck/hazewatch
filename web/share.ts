@@ -26,22 +26,37 @@ export async function drawCard({ spec, region, value, ts }: CardOpts): Promise<B
   g.fillRect(0, 0, 1080, 1080);
   g.fillStyle = band.onColor;
   g.textBaseline = 'alphabetic';
-  const font = (px: number, w: number) => { g.font = `${w} ${px}px system-ui, sans-serif`; };
-  const text = (s: string, y: number) => g.fillText(s, 88, y);
-  font(56, 600); text(regionName(region), 160);
-  font(200, 600); text(`${spec.name} ${value}`, 400);
-  font(72, 400); text(line1, 560); text(line2, 650);
-  font(40, 400); text(`${band.label} · ${fmtTime(ts)}, ${fmtDay(ts.slice(0, 10))}`, 780);
-  font(36, 600); text('HazeCheck', 1080 - 88);
+  const font = (px: number, w: number) => { g.font = `${w} ${px}px 'Bricolage Grotesque Variable', system-ui, sans-serif`; };
+  // Shrinks the font until the line fits the card's 904px text column.
+  const text = (s: string, y: number, w: number, start: number) => {
+    const px = fitFont((px) => { font(px, w); return g.measureText(s).width; }, start, 904, 40);
+    font(px, w);
+    g.fillText(s, 88, y);
+  };
+  text(regionName(region), 160, 600, 56);
+  text(`${spec.name} ${value}`, 400, 600, 200);
+  text(line1, 560, 400, 72); text(line2, 650, 400, 72);
+  text(`${band.label} · ${fmtTime(ts)}, ${fmtDay(ts.slice(0, 10))}`, 780, 400, 40);
+  text('HazeCheck', 1080 - 88, 600, 36);
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png'));
 }
 
-export async function shareNow(o: CardOpts & { publicUrl: string | null }): Promise<'shared' | 'downloaded' | 'cancelled'> {
-  const file = new File([await drawCard(o)], shareFilename(o.region, o.ts), { type: 'image/png' });
+// Largest px (stepping down by 2 from start) at which widthAt(px) <= max, never below floor.
+export function fitFont(widthAt: (px: number) => number, start: number, max: number, floor: number): number {
+  let px = start;
+  while (px > floor && widthAt(px) > max) px = Math.max(floor, px - 2);
+  return px;
+}
+
+export const makeCardFile = async (o: CardOpts) =>
+  new File([await drawCard(o)], shareFilename(o.region, o.ts), { type: 'image/png' });
+
+// No await before navigator.share: keeps the tap's user gesture alive on iOS Safari.
+export async function shareFile(file: File, text: string, publicUrl: string | null): Promise<'shared' | 'downloaded' | 'cancelled'> {
   if (shareMode(navigator, file) === 'files') {
     try {
-      await navigator.share({ files: [file], text: shareText(o.spec, o.region, o.value), ...(o.publicUrl ? { url: o.publicUrl } : {}) });
+      await navigator.share({ files: [file], text, ...(publicUrl ? { url: publicUrl } : {}) });
       return 'shared';
     } catch (e) {
       if (isCancel(e)) return 'cancelled';
@@ -53,6 +68,6 @@ export async function shareNow(o: CardOpts & { publicUrl: string | null }): Prom
   a.href = url;
   a.download = file.name;
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
   return 'downloaded';
 }

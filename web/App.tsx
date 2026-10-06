@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Region } from '../shared/types.ts';
 import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
 import { SCALES } from '../shared/scale.ts';
@@ -12,7 +12,7 @@ import { Regions } from './components/Regions.tsx';
 import { Calendar } from './components/Calendar.tsx';
 import { StaleBanner } from './components/StaleBanner.tsx';
 import { RegionPicker } from './components/RegionPicker.tsx';
-import { shareNow } from './share.ts';
+import { makeCardFile, shareFile, shareText } from './share.ts';
 
 const REFRESH_MS = 10 * 60 * 1000;
 const SENSITIVE = ' Elderly, children, pregnant women and people with heart or lung conditions should take extra care.';
@@ -80,16 +80,6 @@ export function App() {
   useEffect(() => { if (region === null) locate(); }, []);
   useEffect(() => { getConfig().then((c) => setPublicUrl(c.publicUrl)).catch(() => {}); }, []);
 
-  async function share() {
-    if (region === null || now?.ts == null || value === undefined) return;
-    try {
-      await shareNow({ spec, region, value: Math.round(value), ts: now.ts, publicUrl });
-    } catch {
-      setShareError(true);
-      setTimeout(() => setShareError(false), 4000);
-    }
-  }
-
   useEffect(() => {
     let live = true;
     getNow()
@@ -112,7 +102,34 @@ export function App() {
   const metrics = now !== null && now.ts !== null && region !== null ? now.regions[region] : undefined;
   const value = metrics === undefined ? undefined : spec.value(metrics);
   const band = value === undefined ? null : spec.band(Math.round(value));
-  const message = shareError ? "Couldn't share. Try again." : now === null ? (loadFailed ? "Can't reach the server right now. Trying again shortly." : 'Loading…')
+
+  // Card is pre-rendered so the tap can call navigator.share with no await (iOS Safari drops the gesture otherwise).
+  const cardKey = region === null || now?.ts == null || value === undefined ? null : `${region}|${scale}|${Math.round(value)}|${now.ts}`;
+  const card = useRef<{ key: string; file: File } | null>(null);
+  useEffect(() => {
+    if (cardKey === null || region === null || now?.ts == null || value === undefined) return;
+    let live = true;
+    makeCardFile({ spec, region, value: Math.round(value), ts: now.ts })
+      .then((file) => { if (live) card.current = { key: cardKey, file }; })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [cardKey]);
+
+  const errorTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  async function share() {
+    if (cardKey === null || region === null || now?.ts == null || value === undefined) return;
+    const v = Math.round(value);
+    try {
+      const file = card.current?.key === cardKey ? card.current.file : await makeCardFile({ spec, region, value: v, ts: now.ts });
+      await shareFile(file, shareText(spec, region, v), publicUrl);
+    } catch {
+      setShareError(true);
+      clearTimeout(errorTimer.current);
+      errorTimer.current = setTimeout(() => setShareError(false), 4000);
+    }
+  }
+
+  const message = now === null ? (loadFailed ? "Can't reach the server right now. Trying again shortly." : 'Loading…')
     : now.ts === null ? 'Waiting for first data from NEA'
     : region === null ? (needPicker ? null : 'Finding your region…')
     : value === undefined ? `No ${spec.name} reading for this region yet`
@@ -122,7 +139,7 @@ export function App() {
     <div className="page">
       <Sky
         region={region} onRegion={choose} onLocate={locate} onShare={share} view={view} onView={chooseView}
-        scale={scale} onScale={chooseScale} band={band} message={message} metrics={metrics} ts={now?.ts ?? null} points={pm25}
+        scale={scale} onScale={chooseScale} band={band} message={message} notice={shareError ? "Couldn't share. Try again." : null} metrics={metrics} ts={now?.ts ?? null} points={pm25}
       >
         {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner ts={now.ts} />}
         {needPicker && <RegionPicker onPick={choose} />}
