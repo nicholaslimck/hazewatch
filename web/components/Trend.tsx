@@ -1,13 +1,11 @@
-import type { Region } from '../../shared/types.ts';
-import { trend } from '../../shared/bands.ts';
-import { useHistory } from '../api.ts';
 import type { HistoryPoint } from '../api.ts';
 import { fmtHour } from '../format.ts';
 
 const HOUR = 3600_000;
+const WINDOW = 24 * HOUR;
 const W = 300;
-const H = 60;
-const PAD = 4;
+const H = 120;
+const LINES = [55, 150, 250]; // µg/m³ PM2.5 band edges
 
 // Splits hourly points into runs of consecutive hours, so gaps stay gaps.
 function segments(points: HistoryPoint[]): HistoryPoint[][] {
@@ -22,55 +20,46 @@ function segments(points: HistoryPoint[]): HistoryPoint[][] {
   return out;
 }
 
-function Sparkline({ points }: { points: HistoryPoint[] }) {
-  const t0 = Date.parse(points[0].ts);
-  const t1 = Date.parse(points[points.length - 1].ts);
-  const vals = points.map((p) => p.value);
-  const lo = Math.min(...vals);
-  const hi = Math.max(...vals);
-  const x = (ts: string) => ((Date.parse(ts) - t0) / (t1 - t0 || 1)) * W;
-  const y = (v: number) => H - PAD - ((v - lo) / (hi - lo || 1)) * (H - 2 * PAD);
-  return (
-    <svg className="spark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="1h PM2.5 over the last 24 hours">
-      {segments(points).map((seg) =>
-        seg.length === 1 ? (
-          <circle key={seg[0].ts} cx={x(seg[0].ts)} cy={y(seg[0].value)} r="2" fill="currentColor" />
-        ) : (
-          <polyline
-            key={seg[0].ts}
-            points={seg.map((p) => `${x(p.ts).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ')}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            vectorEffect="non-scaling-stroke"
-          />
-        ),
-      )}
-    </svg>
-  );
-}
-
-export function Trend({ region, tick }: { region: Region; tick: number }) {
-  const points = useHistory('24h', 'pm25_one_hourly', region, tick);
+// The SVG stretches to its box (non-scaling strokes); text stays HTML so it keeps its pixel size.
+export function Trend({ points }: { points: HistoryPoint[] | null }) {
   if (!points || points.length === 0) return null;
   const last = points[points.length - 1];
-  const target = Date.parse(last.ts) - 3 * HOUR;
-  const earlier = points.find((p) => Date.parse(p.ts) === target);
-  const dir = trend(last.value, earlier?.value);
-  if (dir === null || earlier === undefined) return null;
-
-  const since = fmtHour(earlier.ts);
-  const delta = Math.abs(Math.round(last.value - earlier.value));
-  const text = dir === 'rising' ? `Up ${delta} µg/m³ since ${since}`
-    : dir === 'falling' ? `Down ${delta} µg/m³ since ${since}`
-    : `Steady since ${since}`;
-  const arrow = dir === 'rising' ? '↑' : dir === 'falling' ? '↓' : '→';
+  const t1 = Date.parse(last.ts);
+  const t0 = t1 - WINDOW;
+  const top = Math.max(160, ...points.map((p) => p.value));
+  const x = (ts: string) => ((Date.parse(ts) - t0) / WINDOW) * W;
+  const y = (v: number) => H - (v / top) * H;
+  const ticks = [4, 3, 2, 1, 0].map((k) => (k === 0 ? 'now' : fmtHour(new Date(t1 - k * 6 * HOUR).toISOString())));
+  const lines = LINES.filter((v) => v <= top);
   return (
-    <section className="card" aria-labelledby="trend-title">
-      <h2 id="trend-title">PM2.5 trend</h2>
-      <p className="trend"><span aria-hidden="true">{arrow}</span> {text}</p>
-      <Sparkline points={points} />
-      <p className="muted small">1h PM2.5, last 24 hours · now {Math.round(last.value)} µg/m³</p>
+    <section aria-labelledby="trend-title">
+      <h2 id="trend-title">Last 24 hours</h2>
+      <p className="caption">Fine particles, hourly. Now {Math.round(last.value)} µg/m³.</p>
+      <div className="chart">
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Fine particles PM2.5 over the last 24 hours">
+          {lines.map((v) => (
+            <line key={v} x1="0" x2={W} y1={y(v)} y2={y(v)} className="ref" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+          ))}
+          {segments(points).map((seg) => (
+            <polyline
+              key={seg[0].ts}
+              points={(seg.length === 1 ? [seg[0], seg[0]] : seg).map((p) => `${x(p.ts).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ')}
+              fill="none"
+              className="line"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        </svg>
+        {lines.map((v) => (
+          <span key={v} className="ref-label" style={{ top: `${(y(v) / H) * 100}%` }}>{v}</span>
+        ))}
+      </div>
+      <div className="ticks" aria-hidden="true">
+        {ticks.map((t, i) => <span key={i}>{t}</span>)}
+      </div>
     </section>
   );
 }

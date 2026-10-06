@@ -23,11 +23,12 @@ export async function getHistory(range: Range, metric: string, region: Region): 
 }
 
 // Refetches when the query or `tick` changes. A failed fetch keeps the last good points
-// for the same query; points from a different query are never returned.
-export function useHistory(range: Range, metric: string, region: Region, tick: number): HistoryPoint[] | null {
+// for the same query; points from a different query are never returned. No region: no fetch, null.
+export function useHistory(range: Range, metric: string, region: Region | null, tick: number): HistoryPoint[] | null {
   const key = `${range}|${metric}|${region}`;
   const [state, setState] = useState<{ key: string; points: HistoryPoint[] } | null>(null);
   useEffect(() => {
+    if (region === null) return;
     let live = true;
     getHistory(range, metric, region)
       .then((points) => { if (live) setState({ key, points }); })

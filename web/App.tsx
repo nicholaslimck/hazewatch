@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react';
-import { REGIONS } from '../shared/types.ts';
 import type { Region } from '../shared/types.ts';
 import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
-import { getNow } from './api.ts';
+import { psiBand } from '../shared/bands.ts';
+import { getNow, useHistory } from './api.ts';
 import type { NowResponse } from './api.ts';
-import { fmtTime, regionName } from './format.ts';
-import { Hero } from './components/Hero.tsx';
+import { Sky } from './components/Sky.tsx';
+import type { View } from './components/Sky.tsx';
 import { Trend } from './components/Trend.tsx';
 import { Regions } from './components/Regions.tsx';
 import { Calendar } from './components/Calendar.tsx';
-import { Details } from './components/Details.tsx';
 import { StaleBanner } from './components/StaleBanner.tsx';
 import { RegionPicker } from './components/RegionPicker.tsx';
 
 const REFRESH_MS = 10 * 60 * 1000;
+const SENSITIVE = ' Elderly, children, pregnant women and people with heart or lung conditions should take extra care.';
 
 function loadSavedRegion(): Region | null {
   try { return parseSavedRegion(localStorage.getItem('region')); } catch { return null; }
+}
+
+function loadView(): View {
+  try { return localStorage.getItem('view') === 'numbers' ? 'numbers' : 'simple'; } catch { return 'simple'; }
 }
 
 export function App() {
@@ -26,11 +30,19 @@ export function App() {
   const [data, setData] = useState<{ now: NowResponse; at: number } | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [tick, setTick] = useState(0);
+  const [view, setView] = useState<View>(loadView);
+  // Shared by the hero's trend sentence and the "Last 24 hours" chart, so it's fetched once.
+  const pm25 = useHistory('24h', 'pm25_one_hourly', region, tick);
 
   function choose(r: Region) {
     setRegion(r);
     setNeedPicker(false);
     try { localStorage.setItem('region', r); } catch { /* private mode etc. */ }
+  }
+
+  function chooseView(v: View) {
+    setView(v);
+    try { localStorage.setItem('view', v); } catch { /* private mode etc. */ }
   }
 
   function locate() {
@@ -63,63 +75,40 @@ export function App() {
   const ageMinutes = data && data.now.ageMinutes !== null
     ? data.now.ageMinutes + (Date.now() - data.at) / 60_000
     : null;
+  const metrics = now !== null && now.ts !== null && region !== null ? now.regions[region] : undefined;
+  const psi = metrics?.psi_twenty_four_hourly;
+  const band = psi === undefined ? null : psiBand(psi);
+  const message = now === null ? (loadFailed ? "Can't reach the server right now. Trying again shortly." : 'Loading…')
+    : now.ts === null ? 'Waiting for first data from NEA'
+    : region === null ? (needPicker ? null : 'Finding your region…')
+    : psi === undefined ? 'No PSI reading for this region yet'
+    : null;
 
   return (
     <div className="page">
-      <header className="header">
-        <div>
-          <h1>{region ? regionName(region) : 'Air quality'}</h1>
-          {now?.ts && <p className="muted">Updated {fmtTime(now.ts)}</p>}
-        </div>
-        <div className="controls">
-          <select
-            aria-label="Region"
-            value={region ?? ''}
-            onChange={(e) => { const r = parseSavedRegion(e.target.value); if (r) choose(r); }}
-          >
-            {region === null && <option value="" disabled>Choose region</option>}
-            {REGIONS.map((r) => <option key={r} value={r}>{regionName(r)}</option>)}
-          </select>
-          <button type="button" className="icon-btn" onClick={locate} aria-label="Use my location" title="Use my location">
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      <main>
+      <Sky
+        region={region} onRegion={choose} onLocate={locate} view={view} onView={chooseView}
+        band={band} message={message} metrics={metrics} ts={now?.ts ?? null} points={pm25}
+      >
+        {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner ts={now.ts} />}
         {needPicker && <RegionPicker onPick={choose} />}
-        {now === null ? (
-          <p className="card message">{loadFailed ? "Can't reach the server right now. Trying again shortly." : 'Loading…'}</p>
-        ) : now.ts === null ? (
-          <p className="card message">Waiting for first data from NEA</p>
-        ) : (
+      </Sky>
+
+      <div className="rest">
+        {now !== null && now.ts !== null && region !== null && (
           <>
-            {ageMinutes !== null && ageMinutes > 120 && <StaleBanner ts={now.ts} />}
-            {region === null ? (
-              !needPicker && <p className="card message">Finding your region…</p>
-            ) : (
-              <div className="grid">
-                <div className="col">
-                  <Hero value={now.regions[region]?.psi_twenty_four_hourly} />
-                  <Trend region={region} tick={tick} />
-                </div>
-                <div className="col">
-                  <Regions now={now} selected={region} />
-                  <Calendar key={region} region={region} tick={tick} />
-                  <Details metrics={now.regions[region]} />
-                </div>
-              </div>
-            )}
+            <Regions now={now} selected={region} onPick={choose} />
+            <div className="pair">
+              <Trend points={pm25} />
+              <Calendar key={region} region={region} tick={tick} />
+            </div>
           </>
         )}
-      </main>
-
-      <footer className="footer muted">
-        Data: NEA via data.gov.sg · <a href="https://data.gov.sg">Source</a>
-      </footer>
+        <footer className="footer">
+          {band && <p>NEA advice: {band.advice}.{band.sensitiveNote && SENSITIVE}</p>}
+          <p>Data: NEA via <a href="https://data.gov.sg">data.gov.sg</a></p>
+        </footer>
+      </div>
     </div>
   );
 }
