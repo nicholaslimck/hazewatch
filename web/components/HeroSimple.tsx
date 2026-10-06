@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { scaleFraction, SCALE_TOP, trend } from '../../shared/bands.ts';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import type { HistoryPoint } from '../api.ts';
-import { fmtHour, fmtTime } from '../format.ts';
+import { fmtHour, fmtTime } from '../../shared/format.ts';
 
 const HOUR = 3600_000;
 const pct = (v: number) => `${scaleFraction(v) * 100}%`;

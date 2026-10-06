@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Region } from '../../shared/types.ts';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import { useHistory } from '../api.ts';
-import { fmtDay, todaySgt } from '../format.ts';
+import { fmtDay, todaySgt } from '../../shared/format.ts';
 import { buildCells, monthLabels } from '../calendar.ts';
 
 export function Calendar({ region, tick, spec }: { region: Region; tick: number; spec: ScaleSpec }) {

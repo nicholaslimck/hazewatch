@@ -1,6 +1,6 @@
 import type { Region } from '../shared/types.ts';
 import type { ScaleSpec } from '../shared/scale.ts';
-import { fmtDay, fmtTime, regionName } from './format.ts';
+import { fmtDay, fmtTime, regionName } from '../shared/format.ts';
 
 type CardOpts = { spec: ScaleSpec; region: Region; value: number; ts: string };
 

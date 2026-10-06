@@ -1,4 +1,4 @@
-import { fmtMonth } from './format.ts';
+import { fmtMonth } from '../shared/format.ts';
 
 const DAY = 86_400_000;
 export const WEEKS = 14;

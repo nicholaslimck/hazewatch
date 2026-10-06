@@ -1,7 +1,7 @@
 import type { Region } from '../shared/types.ts';
 import type { Store, Sub } from './db.ts';
 import { verdict } from '../shared/verdict.ts';
-import { regionName } from '../web/format.ts';
+import { regionName } from '../shared/format.ts';
 
 const LABELS = ['clear', 'unhealthy', 'very unhealthy', 'hazardous'];
 

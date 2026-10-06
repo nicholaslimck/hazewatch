@@ -1,4 +1,4 @@
-import type { Region } from '../shared/types.ts';
+import type { Region } from './types.ts';
 
 const TZ = 'Asia/Singapore';
 const timeFmt = new Intl.DateTimeFormat('en-SG', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });

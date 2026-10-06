@@ -1,5 +1,5 @@
 import type { HistoryPoint } from '../api.ts';
-import { fmtHour } from '../format.ts';
+import { fmtHour } from '../../shared/format.ts';
 
 const HOUR = 3600_000;
 const WINDOW = 24 * HOUR;

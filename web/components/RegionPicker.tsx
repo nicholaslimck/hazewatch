@@ -1,6 +1,6 @@
 import { REGIONS } from '../../shared/types.ts';
 import type { Region } from '../../shared/types.ts';
-import { regionName } from '../format.ts';
+import { regionName } from '../../shared/format.ts';
 
 export function RegionPicker({ onPick }: { onPick: (r: Region) => void }) {
   return (

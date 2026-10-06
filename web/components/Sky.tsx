@@ -8,7 +8,7 @@ import { parseSavedRegion } from '../../shared/regions.ts';
 import { SCALES } from '../../shared/scale.ts';
 import type { Scale } from '../../shared/scale.ts';
 import type { HistoryPoint } from '../api.ts';
-import { regionName } from '../format.ts';
+import { regionName } from '../../shared/format.ts';
 import { HeroSimple } from './HeroSimple.tsx';
 import { HeroNumbers } from './HeroNumbers.tsx';
 

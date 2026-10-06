@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import { scaleFraction } from '../../shared/bands.ts';
 import { dominantPollutant } from '../../shared/verdict.ts';
-import { fmtTime } from '../format.ts';
+import { fmtTime } from '../../shared/format.ts';
 
 const H = 130;
 const UG = 'µg/m³';

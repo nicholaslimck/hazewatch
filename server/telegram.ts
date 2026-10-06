@@ -3,7 +3,7 @@ import type { Region } from '../shared/types.ts';
 import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
 import { psiBand } from '../shared/bands.ts';
 import { verdict } from '../shared/verdict.ts';
-import { fmtTime, regionName } from '../web/format.ts';
+import { fmtTime, regionName } from '../shared/format.ts';
 import type { Store } from './db.ts';
 import { level, SendError } from './alerts.ts';
 

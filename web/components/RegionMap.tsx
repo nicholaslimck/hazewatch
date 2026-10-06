@@ -3,7 +3,7 @@ import { REGIONS } from '../../shared/types.ts';
 import type { Region } from '../../shared/types.ts';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import type { NowResponse } from '../api.ts';
-import { regionName } from '../format.ts';
+import { regionName } from '../../shared/format.ts';
 import { MAP } from '../map.ts';
 
 export function RegionMap({ now, selected, onPick, spec }: { now: NowResponse; selected: Region; onPick: (r: Region) => void; spec: ScaleSpec }) {
