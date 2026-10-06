@@ -7,11 +7,22 @@ self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 async function networkFirst(req) {
   try {
     const res = await fetch(req);
-    if (res.ok) (await caches.open(CACHE)).put(req, res.clone());
-    return res;
-  } catch (err) {
+    if (res.ok) {
+      (await caches.open(CACHE)).put(req, res.clone()).catch(() => {});
+      return res;
+    }
+    // Non-OK response: try cache before returning the error
     const hit = await caches.match(req);
     if (hit) return hit;
+    return res; // Return the non-OK response if no cache
+  } catch (err) {
+    // Network error: try cache, then fallback to navigation root if needed
+    const hit = await caches.match(req);
+    if (hit) return hit;
+    if (req.mode === 'navigate') {
+      const rootHit = await caches.match('/');
+      if (rootHit) return rootHit;
+    }
     throw err; // no cache entry: surface the network error, not an empty 200
   }
 }
@@ -20,7 +31,7 @@ async function cacheFirst(req) {
   const hit = await caches.match(req);
   if (hit) return hit;
   const res = await fetch(req);
-  if (res.ok) (await caches.open(CACHE)).put(req, res.clone());
+  if (res.ok) (await caches.open(CACHE)).put(req, res.clone()).catch(() => {});
   return res;
 }
 
