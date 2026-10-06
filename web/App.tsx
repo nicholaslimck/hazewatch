@@ -96,9 +96,8 @@ export function App() {
   }, []);
 
   const now = data?.now ?? null;
-  const ageMinutes = data && data.now.ageMinutes !== null
-    ? data.now.ageMinutes + (Date.now() - data.at) / 60_000
-    : null;
+  // From ts, not server ageMinutes, so a cached offline response shows its real age.
+  const ageMinutes = data && data.now.ts !== null ? (Date.now() - Date.parse(data.now.ts)) / 60_000 : null;
   const metrics = now !== null && now.ts !== null && region !== null ? now.regions[region] : undefined;
   const value = metrics === undefined ? undefined : spec.value(metrics);
   const band = value === undefined ? null : spec.band(Math.round(value));

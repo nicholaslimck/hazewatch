@@ -84,6 +84,19 @@ test('static: html no-cache, missing assets 404, SPA fallback', async () => {
   assert.doesNotMatch(await esc.text(), /sg-air-quality-monitor/);
 });
 
+test('static: sw.js is no-cache, manifest has its own type', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pwa-'));
+  writeFileSync(join(dir, 'sw.js'), 'self');
+  writeFileSync(join(dir, 'manifest.webmanifest'), '{}');
+  const app = createApp(openDb(':memory:'), { lastIngestAt: null, lastError: null }, dir);
+  const sw = await app.request('/sw.js');
+  assert.equal(sw.status, 200);
+  assert.equal(sw.headers.get('cache-control'), 'no-cache');
+  const m = await app.request('/manifest.webmanifest');
+  assert.equal(m.status, 200);
+  assert.match(m.headers.get('content-type') ?? '', /application\/manifest\+json/);
+});
+
 test('GET /api/config returns publicUrl', async () => {
   const { store, state } = mk();
   for (const publicUrl of [null, 'https://haze.example']) {

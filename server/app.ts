@@ -44,7 +44,7 @@ export function createApp(store: Store, state: IngestState, staticDir?: string, 
     // Stale index.html after a redeploy points at hashed assets that no longer exist.
     app.use('*', async (c, next) => {
       await next();
-      if (c.res.headers.get('content-type')?.startsWith('text/html')) c.header('Cache-Control', 'no-cache');
+      if (c.res.headers.get('content-type')?.startsWith('text/html') || c.req.path === '/sw.js') c.header('Cache-Control', 'no-cache');
     });
     app.use('*', serveStatic({ root: staticDir }));
     app.get('*', async (c) => {
