@@ -34,7 +34,7 @@ export function RegionMap({ now, selected, onPick, spec }: { now: NowResponse; s
               aria-label={v === undefined || !band ? `${regionName(r)}, no reading` : `${regionName(r)}, ${spec.name} ${v}, ${band.label.toLowerCase()}`}
               aria-pressed={r === selected}
               onClick={() => onPick(r)}
-              onFocus={() => setFocused(r)}
+              onFocus={(e) => { if (e.currentTarget.matches(':focus-visible')) setFocused(r); }}
               onBlur={() => setFocused(null)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
