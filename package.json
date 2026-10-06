@@ -11,7 +11,8 @@
     "dev:web": "vite",
     "build": "vite build",
     "start": "node server/main.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:map": "node scripts/build-map.ts"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
