@@ -4,12 +4,18 @@ import { nowcast } from '../shared/aqi.ts';
 
 export type NowResponse = { ts: string | null; ageMinutes: number | null; regions: Partial<Record<Region, Record<string, number>>> };
 export type HistoryPoint = { ts: string; region: Region; value: number };
+export type Sub = { chatId: number; region: Region; notifiedLevel: number };
 export type Store = {
   upsert(rs: Reading[]): void;
   count(): number;
   now(nowMs?: number): NowResponse;
   history(range: '24h' | '7d' | '90d', metric: string, region?: Region): HistoryPoint[];
   daysWithData(metric?: string): Set<string>;
+  subscribe(chatId: number, region: Region, notifiedLevel: number): void;
+  unsubscribe(chatId: number): void;
+  setNotified(chatId: number, level: number): void;
+  subscriptions(): Sub[];
+  subscriptionCount(): number;
   close(): void;
 };
 
@@ -25,6 +31,12 @@ export function openDb(path: string): Store {
     metric TEXT NOT NULL,
     value  REAL NOT NULL,
     PRIMARY KEY (ts, region, metric)
+  )`);
+  db.exec(`CREATE TABLE IF NOT EXISTS subscriptions (
+    chat_id        INTEGER PRIMARY KEY,
+    region         TEXT NOT NULL,
+    notified_level INTEGER NOT NULL,
+    created_at     TEXT NOT NULL
   )`);
   const ins = db.prepare(
     'INSERT INTO readings (ts, region, metric, value) VALUES (?, ?, ?, ?) ON CONFLICT(ts, region, metric) DO UPDATE SET value = excluded.value',
@@ -102,6 +114,24 @@ export function openDb(path: string): Store {
         ? db.prepare('SELECT DISTINCT substr(ts,1,10) AS d FROM readings WHERE metric = ?').all(metric)
         : db.prepare('SELECT DISTINCT substr(ts,1,10) AS d FROM readings').all()) as { d: string }[];
       return new Set(rows.map((x) => x.d));
+    },
+    subscribe(chatId, region, notifiedLevel) {
+      // Upsert leaves created_at alone.
+      db.prepare(
+        'INSERT INTO subscriptions (chat_id, region, notified_level, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(chat_id) DO UPDATE SET region = excluded.region, notified_level = excluded.notified_level',
+      ).run(chatId, region, notifiedLevel, sgtIso(Date.now()));
+    },
+    unsubscribe(chatId) {
+      db.prepare('DELETE FROM subscriptions WHERE chat_id = ?').run(chatId);
+    },
+    setNotified(chatId, level) {
+      db.prepare('UPDATE subscriptions SET notified_level = ? WHERE chat_id = ?').run(level, chatId);
+    },
+    subscriptions() {
+      return db.prepare('SELECT chat_id AS chatId, region, notified_level AS notifiedLevel FROM subscriptions ORDER BY chat_id').all().map((x) => ({ ...x })) as Sub[]; // node:sqlite rows have a null prototype
+    },
+    subscriptionCount() {
+      return (db.prepare('SELECT COUNT(*) AS n FROM subscriptions').get() as { n: number }).n;
     },
     close() {
       db.close();

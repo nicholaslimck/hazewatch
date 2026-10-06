@@ -94,3 +94,27 @@ test('daysWithData filters by metric', () => {
   assert.deepEqual(db.daysWithData('pm25_one_hourly'), new Set(['2026-10-05']));
   assert.deepEqual(db.daysWithData('nope'), new Set());
 });
+
+test('subscribe upserts and keeps one row per chat', () => {
+  const db = openDb(':memory:');
+  db.subscribe(1, 'central', 0);
+  db.subscribe(1, 'west', 2);
+  assert.deepEqual(db.subscriptions(), [{ chatId: 1, region: 'west', notifiedLevel: 2 }]);
+});
+
+test('unsubscribe and setNotified', () => {
+  const db = openDb(':memory:');
+  db.subscribe(1, 'central', 0);
+  db.subscribe(2, 'east', 0);
+  db.setNotified(1, 3);
+  db.unsubscribe(2);
+  assert.deepEqual(db.subscriptions(), [{ chatId: 1, region: 'central', notifiedLevel: 3 }]);
+});
+
+test('subscriptionCount', () => {
+  const db = openDb(':memory:');
+  assert.equal(db.subscriptionCount(), 0);
+  db.subscribe(1, 'central', 0);
+  db.subscribe(2, 'east', 0);
+  assert.equal(db.subscriptionCount(), 2);
+});
