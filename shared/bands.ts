@@ -1,14 +1,23 @@
 export type PsiBand = {
   key: 'good' | 'moderate' | 'unhealthy' | 'very_unhealthy' | 'hazardous';
-  label: string; advice: string; sensitiveNote: boolean; color: string; onColor: string;
+  label: string; advice: string; sensitiveNote: boolean;
+  // Sky tokens: color/onColor are light-theme bg/ink, dark* the dark-theme pair; bar/darkBar are the deeper bar shades.
+  color: string; onColor: string; darkColor: string; darkOnColor: string; bar: string; darkBar: string;
 };
 
-const on = '#1A1A1A';
-const GOOD: PsiBand = { key: 'good', label: 'Good', advice: 'Normal activities', sensitiveNote: false, color: '#7BC67B', onColor: on };
-const MODERATE: PsiBand = { key: 'moderate', label: 'Moderate', advice: 'Normal activities', sensitiveNote: false, color: '#7FB3E0', onColor: on };
-const UNHEALTHY: PsiBand = { key: 'unhealthy', label: 'Unhealthy', advice: 'Reduce prolonged or strenuous outdoor exertion', sensitiveNote: true, color: '#F2C94C', onColor: on };
-const VERY_UNHEALTHY: PsiBand = { key: 'very_unhealthy', label: 'Very unhealthy', advice: 'Avoid prolonged or strenuous outdoor exertion', sensitiveNote: true, color: '#F2994A', onColor: on };
-const HAZARDOUS: PsiBand = { key: 'hazardous', label: 'Hazardous', advice: 'Minimise outdoor activity', sensitiveNote: true, color: '#EB5757', onColor: on };
+const NORMAL = 'Normal activities';
+const GOOD: PsiBand = { key: 'good', label: 'Good', advice: NORMAL, sensitiveNote: false,
+  color: '#BFD9EE', onColor: '#1F3346', darkColor: '#1E3446', darkOnColor: '#D6E6F3', bar: '#7FAFD6', darkBar: '#4F7FA6' };
+const MODERATE: PsiBand = { key: 'moderate', label: 'Moderate', advice: NORMAL, sensitiveNote: false,
+  color: '#D6DFD8', onColor: '#2E3A33', darkColor: '#2C3631', darkOnColor: '#DCE5DE', bar: '#A9B9AD', darkBar: '#6E8273' };
+const UNHEALTHY: PsiBand = { key: 'unhealthy', label: 'Unhealthy', advice: 'Reduce prolonged or strenuous outdoor physical exertion', sensitiveNote: true,
+  color: '#D9C9A0', onColor: '#3D2F12', darkColor: '#4A3F22', darkOnColor: '#EBDDB8', bar: '#C8A957', darkBar: '#B39550' };
+const VERY_UNHEALTHY: PsiBand = { key: 'very_unhealthy', label: 'Very unhealthy', advice: 'Avoid prolonged or strenuous outdoor physical exertion', sensitiveNote: true,
+  color: '#C49A6C', onColor: '#3A2410', darkColor: '#4E3622', darkOnColor: '#EFD3B5', bar: '#B07A45', darkBar: '#B07A45' };
+const HAZARDOUS: PsiBand = { key: 'hazardous', label: 'Hazardous', advice: 'Minimise outdoor activity', sensitiveNote: true,
+  color: '#86644F', onColor: '#FFF4EA', darkColor: '#3E2A22', darkOnColor: '#F3DCCF', bar: '#7A5240', darkBar: '#A0705A' };
+
+export const BANDS: readonly PsiBand[] = [GOOD, MODERATE, UNHEALTHY, VERY_UNHEALTHY, HAZARDOUS];
 
 export function psiBand(v: number): PsiBand {
   if (v <= 50) return GOOD;
