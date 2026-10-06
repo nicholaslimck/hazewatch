@@ -35,8 +35,11 @@ export function handleUpdate(update: TgUpdate, ctx: { store: Store; nowMs: numbe
 
   const out: ApiCall[] = [];
   if (q) out.push({ method: 'answerCallbackQuery', body: { callback_query_id: q.id } }); // stops Telegram's spinner
-  if (nowMs - (lastReply.get(chatId) ?? -Infinity) < REPLY_GAP_MS) return out;
-  lastReply.set(chatId, nowMs);
+  // Rate limit applies to typed messages only; taps on our own inline keyboard are exempt.
+  if (!q) {
+    if (nowMs - (lastReply.get(chatId) ?? -Infinity) < REPLY_GAP_MS) return out;
+    lastReply.set(chatId, nowMs);
+  }
   const say = (text: string, extra: Record<string, unknown> = {}) => out.push({ method: 'sendMessage', body: { chat_id: chatId, text, ...extra } });
 
   const subscribe = (region: Region) => {

@@ -83,8 +83,15 @@ test('rate limit drops a second reply within 3 s', () => {
   assert.equal(run(s, msg('/now'), last, 10_000).length, 1);
   assert.equal(run(s, msg('/now'), last, 12_000).length, 0);
   assert.equal(run(s, msg('/now'), last, 13_000).length, 1);
-  // callbacks still get their spinner stopped
-  assert.deepEqual(run(s, cb('region:north'), last, 13_500).map((c) => c.method), ['answerCallbackQuery']);
+});
+
+test('a tap right after /start is not rate limited', () => {
+  const s = seeded();
+  const last = new Map<number, number>();
+  run(s, msg('/start'), last, 10_000);
+  const calls = run(s, cb('region:central'), last, 10_000);
+  assert.deepEqual(s.subscriptions().map((x) => x.region), ['central']);
+  assert.ok(text(calls).includes(nowText(s, 'central')));
 });
 
 test('cap: 501st subscriber is refused', () => {
