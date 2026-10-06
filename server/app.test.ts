@@ -1,4 +1,7 @@
 import { test } from 'node:test';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import assert from 'node:assert/strict';
 import { openDb } from './db.ts';
 import { createApp } from './app.ts';
@@ -55,4 +58,27 @@ test('cache header and json 404', async () => {
   const r = await app.request('/api/nope');
   assert.equal(r.status, 404);
   assert.ok((await r.json()).error);
+});
+
+test('static: html no-cache, missing assets 404, SPA fallback', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'spa-'));
+  mkdirSync(join(dir, 'assets'));
+  writeFileSync(join(dir, 'index.html'), '<html>spa</html>');
+  writeFileSync(join(dir, 'assets', 'a.js'), 'x=1');
+  const store = openDb(':memory:');
+  const app = createApp(store, { lastIngestAt: null, lastError: null }, dir);
+  for (const p of ['/', '/some/route']) {
+    const r = await app.request(p);
+    assert.equal(r.status, 200, p);
+    assert.equal(r.headers.get('cache-control'), 'no-cache', p);
+    assert.match(await r.text(), /spa/);
+  }
+  assert.equal((await app.request('/assets/a.js')).status, 200);
+  assert.equal((await app.request('/assets/missing.js')).status, 404);
+  assert.equal((await app.request('/favicon.ico')).status, 404);
+  const api = await app.request('/api/nope');
+  assert.equal(api.status, 404);
+  assert.deepEqual(await api.json(), { error: 'not found' });
+  const esc = await app.request('/../package.json');
+  assert.doesNotMatch(await esc.text(), /sg-air-quality-monitor/);
 });

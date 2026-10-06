@@ -36,8 +36,17 @@ export function createApp(store: Store, state: IngestState, staticDir?: string):
   app.all('/api/*', (c) => c.json({ error: 'not found' }, 404));
 
   if (staticDir) {
+    // Stale index.html after a redeploy points at hashed assets that no longer exist.
+    app.use('*', async (c, next) => {
+      await next();
+      if (c.res.headers.get('content-type')?.startsWith('text/html')) c.header('Cache-Control', 'no-cache');
+    });
     app.use('*', serveStatic({ root: staticDir }));
-    app.get('*', async (c) => c.html(await readFile(`${staticDir}/index.html`, 'utf8')));
+    app.get('*', async (c) => {
+      const p = c.req.path;
+      if (p.startsWith('/assets/') || /\./.test(p.split('/').pop()!)) return c.text('not found', 404);
+      return c.html(await readFile(`${staticDir}/index.html`, 'utf8'));
+    });
   }
   return app;
 }
