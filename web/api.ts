@@ -15,6 +15,8 @@ async function getJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+export const getConfig = () => getJson<{ publicUrl: string | null }>('/api/config');
+
 export const getNow = () => getJson<NowResponse>('/api/now');
 
 export async function getHistory(range: Range, metric: string, region: Region): Promise<HistoryPoint[]> {

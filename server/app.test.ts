@@ -83,3 +83,12 @@ test('static: html no-cache, missing assets 404, SPA fallback', async () => {
   const esc = await app.request('/../package.json');
   assert.doesNotMatch(await esc.text(), /sg-air-quality-monitor/);
 });
+
+test('GET /api/config returns publicUrl', async () => {
+  const { store, state } = mk();
+  for (const publicUrl of [null, 'https://haze.example']) {
+    const res = await createApp(store, state, undefined, { publicUrl }).request('/api/config');
+    assert.deepEqual(await res.json(), { publicUrl });
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+  }
+});

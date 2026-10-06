@@ -8,7 +8,7 @@ import type { Region } from '../shared/types.ts';
 
 const RANGES = ['24h', '7d', '90d'] as const;
 
-export function createApp(store: Store, state: IngestState, staticDir?: string): Hono {
+export function createApp(store: Store, state: IngestState, staticDir?: string, config: { publicUrl: string | null } = { publicUrl: null }): Hono {
   const app = new Hono();
 
   app.use('/api/*', async (c, next) => {
@@ -19,6 +19,11 @@ export function createApp(store: Store, state: IngestState, staticDir?: string):
   app.get('/api/health', (c) => {
     c.header('Cache-Control', 'no-store');
     return c.json({ ok: state.lastError === null, lastIngestAt: state.lastIngestAt, lastError: state.lastError });
+  });
+
+  app.get('/api/config', (c) => {
+    c.header('Cache-Control', 'no-store');
+    return c.json(config);
   });
 
   app.get('/api/now', (c) => c.json(store.now()));

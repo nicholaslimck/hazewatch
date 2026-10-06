@@ -3,7 +3,7 @@ import type { Region } from '../shared/types.ts';
 import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
 import { SCALES } from '../shared/scale.ts';
 import type { Scale } from '../shared/scale.ts';
-import { getNow, useHistory } from './api.ts';
+import { getConfig, getNow, useHistory } from './api.ts';
 import type { NowResponse } from './api.ts';
 import { Sky } from './components/Sky.tsx';
 import type { View } from './components/Sky.tsx';
@@ -12,6 +12,7 @@ import { Regions } from './components/Regions.tsx';
 import { Calendar } from './components/Calendar.tsx';
 import { StaleBanner } from './components/StaleBanner.tsx';
 import { RegionPicker } from './components/RegionPicker.tsx';
+import { shareNow } from './share.ts';
 
 const REFRESH_MS = 10 * 60 * 1000;
 const SENSITIVE = ' Elderly, children, pregnant women and people with heart or lung conditions should take extra care.';
@@ -46,6 +47,8 @@ export function App() {
   const [view, setView] = useState<View>(loadView);
   const [scale, setScale] = useState<Scale>(loadScale);
   const spec = SCALES[scale];
+  const [publicUrl, setPublicUrl] = useState<string | null>(null);
+  const [shareError, setShareError] = useState(false);
   // Shared by the hero's trend sentence and the "Last 24 hours" chart, so it's fetched once.
   const pm25 = useHistory('24h', 'pm25_one_hourly', region, tick);
 
@@ -75,6 +78,17 @@ export function App() {
   }
 
   useEffect(() => { if (region === null) locate(); }, []);
+  useEffect(() => { getConfig().then((c) => setPublicUrl(c.publicUrl)).catch(() => {}); }, []);
+
+  async function share() {
+    if (region === null || now?.ts == null || value === undefined) return;
+    try {
+      await shareNow({ spec, region, value: Math.round(value), ts: now.ts, publicUrl });
+    } catch {
+      setShareError(true);
+      setTimeout(() => setShareError(false), 4000);
+    }
+  }
 
   useEffect(() => {
     let live = true;
@@ -98,7 +112,7 @@ export function App() {
   const metrics = now !== null && now.ts !== null && region !== null ? now.regions[region] : undefined;
   const value = metrics === undefined ? undefined : spec.value(metrics);
   const band = value === undefined ? null : spec.band(Math.round(value));
-  const message = now === null ? (loadFailed ? "Can't reach the server right now. Trying again shortly." : 'Loading…')
+  const message = shareError ? "Couldn't share. Try again." : now === null ? (loadFailed ? "Can't reach the server right now. Trying again shortly." : 'Loading…')
     : now.ts === null ? 'Waiting for first data from NEA'
     : region === null ? (needPicker ? null : 'Finding your region…')
     : value === undefined ? `No ${spec.name} reading for this region yet`
@@ -107,7 +121,7 @@ export function App() {
   return (
     <div className="page">
       <Sky
-        region={region} onRegion={choose} onLocate={locate} view={view} onView={chooseView}
+        region={region} onRegion={choose} onLocate={locate} onShare={share} view={view} onView={chooseView}
         scale={scale} onScale={chooseScale} band={band} message={message} metrics={metrics} ts={now?.ts ?? null} points={pm25}
       >
         {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner ts={now.ts} />}

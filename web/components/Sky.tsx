@@ -47,7 +47,7 @@ function useSkyTokens(band: PsiBand | null) {
 }
 
 type Props = {
-  region: Region | null; onRegion: (r: Region) => void; onLocate: () => void;
+  region: Region | null; onRegion: (r: Region) => void; onLocate: () => void; onShare: () => void;
   view: View; onView: (v: View) => void;
   scale: Scale; onScale: (s: Scale) => void;
   band: PsiBand | null; message: string | null;
@@ -55,7 +55,7 @@ type Props = {
   children?: ReactNode;
 };
 
-export function Sky({ region, onRegion, onLocate, view, onView, scale, onScale, band, message, metrics, ts, points, children }: Props) {
+export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, metrics, ts, points, children }: Props) {
   useSkyTokens(band);
   const spec = SCALES[scale];
   const value = metrics === undefined ? undefined : spec.value(metrics);
@@ -88,6 +88,14 @@ export function Sky({ region, onRegion, onLocate, view, onView, scale, onScale, 
               <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
             </svg>
           </button>
+          {value !== undefined && ts !== null && (
+            <button type="button" className="locate" onClick={onShare} aria-label="Share air quality" title="Share air quality">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 15V3M8 7l4-4 4 4" />
+                <path d="M5 12v8h14v-8" />
+              </svg>
+            </button>
+          )}
         </div>
         <div className="toggle" role="radiogroup" aria-label="View">
           {(['simple', 'numbers'] as const).map((v) => (

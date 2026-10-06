@@ -14,7 +14,7 @@ mkdirSync(dirname(dbPath), { recursive: true });
 
 const store = openDb(dbPath);
 const state: IngestState = { lastIngestAt: null, lastError: null };
-const server = serve({ fetch: createApp(store, state, 'dist').fetch, port }, () => console.log(`listening on :${port}`));
+const server = serve({ fetch: createApp(store, state, 'dist', { publicUrl: process.env.PUBLIC_URL || null }).fetch, port }, () => console.log(`listening on :${port}`));
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = token ? createBot({ token, store }) : null;
