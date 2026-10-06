@@ -24,6 +24,10 @@ test('/start replies with a region keyboard', () => {
   assert.equal(kb[5].text, 'Use the region nearest me');
 });
 
+test('/region shows the same keyboard as /start', () => {
+  assert.deepEqual(run(seeded(), msg('/region')), run(seeded(), msg('/start')));
+});
+
 test('callback region:central subscribes', () => {
   const s = seeded(135);
   const calls = run(s, cb('region:central'));
@@ -66,7 +70,7 @@ test('/stop removes the subscription', () => {
 
 test('unknown text gets one-line help and is not echoed', () => {
   const t = text(run(seeded(), msg('banana-split')));
-  assert.equal(t, 'Send /start to pick a region, /now for the current reading, or /stop to unsubscribe.');
+  assert.equal(t, 'Send /start or /region to pick a region, /now for the current reading, or /stop to unsubscribe.');
 });
 
 test('callback with unknown region is rejected', () => {

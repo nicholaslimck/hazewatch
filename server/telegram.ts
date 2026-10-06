@@ -17,7 +17,7 @@ export type ApiCall = { method: 'sendMessage' | 'answerCallbackQuery'; body: Rec
 const MAX_SUBS = 500;
 const REPLY_GAP_MS = 3000;
 const BACKOFF = [5000, 30000, 60000];
-const HELP = 'Send /start to pick a region, /now for the current reading, or /stop to unsubscribe.';
+const HELP = 'Send /start or /region to pick a region, /now for the current reading, or /stop to unsubscribe.';
 const FULL = 'HazeCheck is full right now. Try again later.';
 
 export function nowText(store: Store, region: Region): string {
@@ -72,6 +72,7 @@ export function handleUpdate(update: TgUpdate, ctx: { store: Store; nowMs: numbe
   }
   switch (m.text?.split(/[\s@]/)[0]) {
     case '/start':
+    case '/region':
       say('Which part of Singapore should I watch?', {
         reply_markup: {
           inline_keyboard: [
@@ -99,7 +100,7 @@ export function handleUpdate(update: TgUpdate, ctx: { store: Store; nowMs: numbe
 export function createBot(o: { token: string; store: Store; fetch?: typeof fetch; sleep?: (ms: number) => Promise<void> }) {
   const f = o.fetch ?? fetch;
   const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
-  const redact = (e: unknown) => String(e).replaceAll(o.token, '<token>');
+  const redact = (e: unknown) => (e instanceof Error && e.cause ? `${e} (${e.cause})` : String(e)).replaceAll(o.token, '<token>');
   const api = async (method: string, body: unknown, signal?: AbortSignal) => {
     const res = await f(`https://api.telegram.org/bot${o.token}/${method}`, {
       method: 'POST',
