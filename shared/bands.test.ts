@@ -1,5 +1,5 @@
 import { test } from 'node:test'; import assert from 'node:assert/strict';
-import { psiBand, pm25Band, trend } from './bands.ts';
+import { psiBand, trend, bandIndex, segments, PSI_EDGES } from './bands.ts';
 test('psi band edges', () => {
   const cases: [number, string][] = [[0,'good'],[50,'good'],[51,'moderate'],[100,'moderate'],[101,'unhealthy'],[200,'unhealthy'],[201,'very_unhealthy'],[300,'very_unhealthy'],[301,'hazardous']];
   for (const [v, k] of cases) assert.equal(psiBand(v).key, k, `psi ${v}`);
@@ -28,8 +28,11 @@ test('sky colours per band', () => {
       { color, onColor, darkColor, darkOnColor, bar, darkBar }, `psi ${v}`);
   }
 });
-test('pm25 bands', () => {
-  for (const [v, b] of [[55,1],[56,2],[150,2],[151,3],[250,3],[251,4]] as const) assert.equal(pm25Band(v), b);
+test('bandIndex and segments', () => {
+  for (const [v, i] of [[0,0],[50,0],[51,1],[300,3],[301,4],[999,4]] as const) assert.equal(bandIndex(v, PSI_EDGES), i, `psi ${v}`);
+  assert.deepEqual(segments([50, 100], [0.1, 0.2, 0.3]), [
+    { from: 0, to: 50, opacity: 0.1 }, { from: 50, to: 100, opacity: 0.2 }, { from: 100, to: 400, opacity: 0.3 },
+  ]);
 });
 test('trend', () => {
   assert.equal(trend(70, 60), 'rising'); assert.equal(trend(50, 60), 'falling'); assert.equal(trend(65, 60), 'steady');

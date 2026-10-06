@@ -1,6 +1,7 @@
 import { REGIONS } from '../../shared/types.ts';
 import type { Region } from '../../shared/types.ts';
 import type { ScaleSpec } from '../../shared/scale.ts';
+import { scaleFraction } from '../../shared/bands.ts';
 import type { NowResponse } from '../api.ts';
 import { regionName } from '../format.ts';
 
@@ -30,7 +31,7 @@ export function Regions({ now, selected, onPick, spec }: { now: NowResponse; sel
                   <span className="track">
                     <span
                       className="fill"
-                      style={{ width: `${(Math.min(v, 400) / 400) * 100}%`, background: `var(--bar-${spec.band(Math.round(v)).key})` }}
+                      style={{ width: `${scaleFraction(v) * 100}%`, background: `var(--bar-${spec.band(Math.round(v)).key})` }}
                     />
                   </span>
                   <span className="psi">{Math.round(v)}</span>

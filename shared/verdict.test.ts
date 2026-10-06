@@ -27,7 +27,7 @@ test('bandPosition thirds', () => {
 });
 
 test('bandPosition with AQI edges', () => {
-  const edges = [50, 100, 150, 200, 300, 400];
+  const edges = [50, 100, 150, 200, 300];
   const cases: [number, string][] = [
     [101, 'low end'], [117, 'low end'], [118, 'middle'], [133, 'middle'], [134, 'high end'], [150, 'high end'], [151, 'low end'], [200, 'high end'], [201, 'low end'], [999, 'high end'],
   ];

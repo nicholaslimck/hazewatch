@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { ScaleSpec } from '../../shared/scale.ts';
+import { scaleFraction } from '../../shared/bands.ts';
 import { dominantPollutant } from '../../shared/verdict.ts';
 import { fmtTime } from '../format.ts';
 
@@ -16,7 +17,7 @@ const POLLUTANTS: { key: string; name: string; index: string | null; conc: strin
   { key: 'co', name: 'Carbon monoxide CO', index: 'co_sub_index', conc: 'co_eight_hour_max', unit: 'mg/m³' },
 ];
 
-const y = (v: number) => H - (Math.min(Math.max(v, 0), 400) / 400) * H;
+const y = (v: number) => H - scaleFraction(v) * H;
 
 function Gauge({ value, segments }: { value: number; segments: ScaleSpec['segments'] }) {
   return (

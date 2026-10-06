@@ -1,33 +1,32 @@
+import { bandIndex, PSI_EDGES, SCALE_TOP, segments } from './bands.ts';
+
 export type Pollutant = 'pm25' | 'pm10' | 'o3' | 'co' | 'so2';
 export const POLLUTANTS: readonly Pollutant[] = ['pm25', 'pm10', 'o3', 'co', 'so2'];
 
-// Band segments on a 0–400 scale, drawn in sky-ink at rising opacity.
-export const SCALE: { from: number; to: number; opacity: number }[] = [
-  { from: 0, to: 50, opacity: 0.18 },
-  { from: 50, to: 100, opacity: 0.3 },
-  { from: 100, to: 200, opacity: 0.42 },
-  { from: 200, to: 300, opacity: 0.54 },
-  { from: 300, to: 400, opacity: 0.66 },
+// PSI band segments, drawn in sky-ink at rising opacity.
+export const SCALE = segments(PSI_EDGES, [0.18, 0.3, 0.42, 0.54, 0.66]);
+
+// PSI's band edges plus a split at 150, where the run advice changes inside Unhealthy.
+const PSI_VERDICT_EDGES = [...PSI_EDGES, 150].sort((a, b) => a - b);
+const PSI_VERDICTS: [string, string][] = [
+  ['Clear skies.', 'A good day to be outside.'],
+  ['A little hazy.', 'Fine for a run.'],
+  ['Hazy.', 'Skip the long run today.'],
+  ['Hazy.', 'Keep outdoor exercise light.'],
+  ['Very hazy.', 'Avoid exercising outdoors.'],
+  ['Hazardous.', 'Stay indoors as much as you can.'],
 ];
 
 export function verdict(psi: number): [string, string] {
-  if (psi <= 50) return ['Clear skies.', 'A good day to be outside.'];
-  if (psi <= 100) return ['A little hazy.', 'Fine for a run.'];
-  if (psi <= 150) return ['Hazy.', 'Skip the long run today.'];
-  if (psi <= 200) return ['Hazy.', 'Keep outdoor exercise light.'];
-  if (psi <= 300) return ['Very hazy.', 'Avoid exercising outdoors.'];
-  return ['Hazardous.', 'Stay indoors as much as you can.'];
+  return PSI_VERDICTS[bandIndex(psi, PSI_VERDICT_EDGES)];
 }
 
-export const PSI_EDGES = [50, 100, 200, 300, 400]; // upper edge of each band; the last band has no real top, so it's treated as ending at 400
-
-// Thirds of the band `psi` falls in; values past the last edge are clamped into the top band.
-export function bandPosition(psi: number, edges: readonly number[] = PSI_EDGES): 'low end' | 'middle' | 'high end' {
-  const found = edges.findIndex((e) => psi <= e);
-  const i = found < 0 ? edges.length - 1 : found;
+// Thirds of the band `v` falls in; the open last band is treated as ending at SCALE_TOP and values past it clamp.
+export function bandPosition(v: number, edges: readonly number[] = PSI_EDGES): 'low end' | 'middle' | 'high end' {
+  const i = bandIndex(v, edges);
   const lo = i === 0 ? 0 : edges[i - 1] + 1;
-  const hi = edges[i];
-  const d = (Math.min(Math.max(psi, lo), hi) - lo) * 3; // compare in integers: d / (hi - lo) vs 1 and 2
+  const hi = i < edges.length ? edges[i] : SCALE_TOP;
+  const d = (Math.min(Math.max(v, lo), hi) - lo) * 3; // compare in integers: d / (hi - lo) vs 1 and 2
   return d < hi - lo ? 'low end' : d < 2 * (hi - lo) ? 'middle' : 'high end';
 }
 

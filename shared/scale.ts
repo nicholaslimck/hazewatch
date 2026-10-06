@@ -1,7 +1,7 @@
-import { BANDS, psiBand } from './bands.ts';
+import { BANDS, psiBand, PSI_EDGES, PM25_1H_EDGES } from './bands.ts';
 import type { PsiBand } from './bands.ts';
-import { aqiBand, aqiVerdict, pm25ToAqi, AQI_SEGMENTS } from './aqi.ts';
-import { bandPosition, PSI_EDGES, SCALE, verdict } from './verdict.ts';
+import { aqiBand, aqiVerdict, pm25ToAqi, AQI_EDGES, AQI_PM25_EDGES, AQI_SEGMENTS } from './aqi.ts';
+import { bandPosition, SCALE, verdict } from './verdict.ts';
 
 export type Scale = 'psi' | 'aqi';
 
@@ -24,7 +24,18 @@ export type ScaleSpec = {
   legend: { key: PsiBand['key']; label: string }[];
 };
 
-const AQI_EDGES = [50, 100, 150, 200, 300, 400];
+const PM25_1H_NAMES = ['Normal', 'Elevated', 'High', 'Very high']; // NEA's names for PM25_1H_EDGES bands
+const AQI_LEGEND: ScaleSpec['legend'] = [
+  { key: 'good', label: 'Good' },
+  { key: 'moderate', label: 'Moderate' },
+  { key: 'unhealthy', label: 'Sensitive groups' },
+  { key: 'very_unhealthy', label: 'Unhealthy' },
+  { key: 'severe', label: 'Very unhealthy' },
+  { key: 'hazardous', label: 'Hazardous' },
+];
+
+// A chart line at each band's top edge, labelled with the band that starts above it.
+const lines = (edges: readonly number[], names: readonly string[]) => edges.map((v, i) => ({ v, label: names[i + 1] }));
 
 export const SCALES: Record<Scale, ScaleSpec> = {
   psi: {
@@ -38,11 +49,10 @@ export const SCALES: Record<Scale, ScaleSpec> = {
     value: (m) => m.psi_twenty_four_hourly,
     band: psiBand,
     verdict,
-    position: (v) => bandPosition(v, PSI_EDGES),
+    position: (v) => bandPosition(v, PSI_EDGES), // not PSI_VERDICT_EDGES: "middle of unhealthy" means the whole band
     segments: SCALE,
     history: { metric: 'psi_twenty_four_hourly', convert: (v) => v },
-    // NEA's 1-hour PM2.5 bands: Normal 0–55, Elevated 56–150, High 151–250, Very high 251+.
-    trendLines: [{ v: 55, label: 'Elevated' }, { v: 150, label: 'High' }, { v: 250, label: 'Very high' }],
+    trendLines: lines(PM25_1H_EDGES, PM25_1H_NAMES),
     legend: BANDS.map((b) => ({ key: b.key, label: b.label })),
   },
   aqi: {
@@ -59,14 +69,8 @@ export const SCALES: Record<Scale, ScaleSpec> = {
     position: (v) => bandPosition(v, AQI_EDGES),
     segments: AQI_SEGMENTS,
     history: { metric: 'pm25_one_hourly', convert: pm25ToAqi },
-    trendLines: [{ v: 35.4, label: 'Sensitive groups' }, { v: 55.4, label: 'Unhealthy' }, { v: 125.4, label: 'Very unhealthy' }],
-    legend: [
-      { key: 'good', label: 'Good' },
-      { key: 'moderate', label: 'Moderate' },
-      { key: 'unhealthy', label: 'Sensitive groups' },
-      { key: 'very_unhealthy', label: 'Unhealthy' },
-      { key: 'severe', label: 'Very unhealthy' },
-      { key: 'hazardous', label: 'Hazardous' },
-    ],
+    // Skip the Good/Moderate line (9 µg/m³ sits on the chart floor) and Hazardous (off the chart top in practice).
+    trendLines: lines(AQI_PM25_EDGES, AQI_LEGEND.map((l) => l.label)).slice(1, 4),
+    legend: AQI_LEGEND,
   },
 };

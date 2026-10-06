@@ -1,4 +1,4 @@
-import { BANDS, SEVERE } from './bands.ts';
+import { BANDS, SEVERE, bandIndex, segments } from './bands.ts';
 import type { PsiBand } from './bands.ts';
 
 // US EPA PM2.5 breakpoints, 2024 revision (AQI Technical Assistance Document, May 2024).
@@ -41,28 +41,29 @@ const AQI_BANDS: readonly PsiBand[] = [
   { ...base('moderate'), label: 'Moderate', advice: 'Unusually sensitive people: consider shorter, less intense outdoor activity', sensitiveNote: false },
   { ...base('unhealthy'), label: 'Unhealthy for sensitive groups', advice: 'Sensitive groups: make outdoor activity shorter and less intense, and take more breaks', sensitiveNote: false },
   { ...base('very_unhealthy'), label: 'Unhealthy', advice: 'Sensitive groups: consider moving activity indoors. Everyone else: keep outdoor activity shorter and less intense', sensitiveNote: false },
-  { ...SEVERE, label: 'Very unhealthy', advice: 'Sensitive groups: avoid all outdoor physical activity. Everyone else: limit outdoor physical activity', sensitiveNote: false },  { ...base('hazardous'), label: 'Hazardous', advice: 'Sensitive groups: stay indoors and keep activity light. Everyone else: avoid all outdoor physical activity', sensitiveNote: false },
+  { ...SEVERE, label: 'Very unhealthy', advice: 'Sensitive groups: avoid all outdoor physical activity. Everyone else: limit outdoor physical activity', sensitiveNote: false },
+  { ...base('hazardous'), label: 'Hazardous', advice: 'Sensitive groups: stay indoors and keep activity light. Everyone else: avoid all outdoor physical activity', sensitiveNote: false },
 ];
+
+// Edges come from the breakpoint table: AQI index tops (50, 100, 150, 200, 300) and the PM2.5 µg/m³ where each band ends.
+export const AQI_EDGES = BREAKPOINTS.slice(0, -1).map((b) => b.iHi);
+export const AQI_PM25_EDGES = BREAKPOINTS.slice(0, -1).map((b) => b.cHi);
 
 export function aqiBand(v: number): PsiBand {
-  return AQI_BANDS[v <= 50 ? 0 : v <= 100 ? 1 : v <= 150 ? 2 : v <= 200 ? 3 : v <= 300 ? 4 : 5];
+  return AQI_BANDS[bandIndex(v, AQI_EDGES)];
 }
+
+const AQI_VERDICTS: [string, string][] = [
+  ['Clear skies.', 'A good day to be outside.'],
+  ['A little hazy.', 'Fine for a run.'],
+  ['Hazy.', 'Sensitive groups, take it easy.'],
+  ['Hazy.', 'Skip the long run today.'],
+  ['Very hazy.', 'Avoid exercising outdoors.'],
+  ['Hazardous.', 'Stay indoors as much as you can.'],
+];
 
 export function aqiVerdict(v: number): [string, string] {
-  if (v <= 50) return ['Clear skies.', 'A good day to be outside.'];
-  if (v <= 100) return ['A little hazy.', 'Fine for a run.'];
-  if (v <= 150) return ['Hazy.', 'Sensitive groups, take it easy.'];
-  if (v <= 200) return ['Hazy.', 'Skip the long run today.'];
-  if (v <= 300) return ['Very hazy.', 'Avoid exercising outdoors.'];
-  return ['Hazardous.', 'Stay indoors as much as you can.'];
+  return AQI_VERDICTS[bandIndex(v, AQI_EDGES)];
 }
 
-// Band segments on the same 0–400 drawing scale as PSI's SCALE in verdict.ts.
-export const AQI_SEGMENTS: { from: number; to: number; opacity: number }[] = [
-  { from: 0, to: 50, opacity: 0.18 },
-  { from: 50, to: 100, opacity: 0.3 },
-  { from: 100, to: 150, opacity: 0.38 },
-  { from: 150, to: 200, opacity: 0.46 },
-  { from: 200, to: 300, opacity: 0.56 },
-  { from: 300, to: 400, opacity: 0.66 },
-];
+export const AQI_SEGMENTS = segments(AQI_EDGES, [0.18, 0.3, 0.38, 0.46, 0.56, 0.66]);

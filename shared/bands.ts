@@ -26,19 +26,26 @@ export const SEVERE: PsiBand = { key: 'severe', label: 'Very unhealthy', advice:
 // Every palette that needs CSS tokens (--bar-*, --cell-*).
 export const PALETTES: readonly PsiBand[] = [...BANDS, SEVERE];
 
-export function psiBand(v: number): PsiBand {
-  if (v <= 50) return GOOD;
-  if (v <= 100) return MODERATE;
-  if (v <= 200) return UNHEALTHY;
-  if (v <= 300) return VERY_UNHEALTHY;
-  return HAZARDOUS;
+// Band edges: the top of each band but the last (which is open-ended). Every threshold in the app derives from these.
+export const PSI_EDGES = [50, 100, 200, 300];
+export const PM25_1H_EDGES = [55, 150, 250]; // NEA's 1-hour PM2.5 bands: Normal, Elevated, High, Very high
+export const SCALE_TOP = 400; // where drawn scales stop; the open last band is treated as ending here
+export const scaleFraction = (v: number) => Math.min(Math.max(v, 0), SCALE_TOP) / SCALE_TOP; // 0–1 position on a drawn scale
+
+// Index of the band `v` falls in: 0 for <= edges[0], edges.length for anything above the last edge.
+export function bandIndex(v: number, edges: readonly number[]): number {
+  const i = edges.findIndex((e) => v <= e);
+  return i < 0 ? edges.length : i;
 }
 
-export function pm25Band(v: number): 1 | 2 | 3 | 4 {
-  if (v <= 55) return 1;
-  if (v <= 150) return 2;
-  if (v <= 250) return 3;
-  return 4;
+// Drawn segments from 0 to SCALE_TOP, one per band, with one opacity per band.
+export function segments(edges: readonly number[], opacities: readonly number[]): { from: number; to: number; opacity: number }[] {
+  const tops = [...edges, SCALE_TOP];
+  return tops.map((to, i) => ({ from: i === 0 ? 0 : tops[i - 1], to, opacity: opacities[i] }));
+}
+
+export function psiBand(v: number): PsiBand {
+  return BANDS[bandIndex(v, PSI_EDGES)];
 }
 
 export function trend(latest: number | undefined, threeHoursAgo: number | undefined): 'rising' | 'falling' | 'steady' | null {

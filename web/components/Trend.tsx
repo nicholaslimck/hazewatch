@@ -36,7 +36,7 @@ export function Trend({ points, bandLines, caption }: { points: HistoryPoint[] |
   // Lines are ascending, so each is drawn higher than the last; keep a label only if it clears the previous kept one.
   let lastY = Infinity;
   const labelled = lines.filter((l) => {
-    const py = (y(l.v) / H) * 120; // chart is 120px tall
+    const py = y(l.v); // viewBox height equals the chart's 120px CSS height
     if (lastY - py < LABEL_GAP) return false;
     lastY = py;
     return true;

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { trend } from '../../shared/bands.ts';
+import { scaleFraction, SCALE_TOP, trend } from '../../shared/bands.ts';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import type { HistoryPoint } from '../api.ts';
 import { fmtHour, fmtTime } from '../format.ts';
 
 const HOUR = 3600_000;
-const pct = (v: number) => `${(Math.min(Math.max(v, 0), 400) / 400) * 100}%`;
+const pct = (v: number) => `${scaleFraction(v) * 100}%`;
 
 // "Clearing since 3pm" etc., or null when there's no reading from exactly 3 hours before the latest.
 function trendSentence(points: HistoryPoint[] | null): string | null {
@@ -43,14 +43,14 @@ function ScaleBar({ v, spec }: { v: number; spec: ScaleSpec }) {
   const t = tip === null ? null : { ...describe(spec, tip), s: segs[tip] };
   // Keep the tooltip on screen: segments near an edge align to that edge instead of centring.
   const tipStyle = t === null ? undefined
-    : (t.s.from + t.s.to) / 2 < 120 ? { left: pct(t.s.from) }
-    : (t.s.from + t.s.to) / 2 > 280 ? { right: `calc(100% - ${pct(t.s.to)})` }
+    : (t.s.from + t.s.to) / 2 < SCALE_TOP * 0.3 ? { left: pct(t.s.from) }
+    : (t.s.from + t.s.to) / 2 > SCALE_TOP * 0.7 ? { right: `calc(100% - ${pct(t.s.to)})` }
     : { left: pct((t.s.from + t.s.to) / 2), transform: 'translateX(-50%)' };
   return (
     <div className="scale-wrap" ref={wrap}>
-      <svg className="scale" width="100%" height="16" role="img" aria-label={`${spec.name} ${v} on a scale to 400`}>
-        {/* Segments in 0–400 units so each gets a fixed inset; the marker stays in % so it isn't stretched. */}
-        <svg viewBox="0 0 400 6" preserveAspectRatio="none" y="5" width="100%" height="6">
+      <svg className="scale" width="100%" height="16" role="img" aria-label={`${spec.name} ${v} on a scale to ${SCALE_TOP}`}>
+        {/* Segments in scale units so each gets a fixed inset; the marker stays in % so it isn't stretched. */}
+        <svg viewBox={`0 0 ${SCALE_TOP} 6`} preserveAspectRatio="none" y="5" width="100%" height="6">
           {segs.map((s) => (
             <rect key={s.from} x={s.from + 2} width={s.to - s.from - 4} height="6" rx="3" fill="currentColor" fillOpacity={s.opacity} />
           ))}
@@ -64,7 +64,7 @@ function ScaleBar({ v, spec }: { v: number; spec: ScaleSpec }) {
             key={s.from}
             type="button"
             className="scale-hit"
-            style={{ left: pct(s.from), width: `${((s.to - s.from) / 400) * 100}%` }}
+            style={{ left: pct(s.from), width: `${((s.to - s.from) / SCALE_TOP) * 100}%` }}
             aria-label={`${d.title}. ${d.advice}`}
             aria-expanded={tip === i}
             onPointerEnter={(e) => { if (e.pointerType === 'mouse') setTip(i); }}

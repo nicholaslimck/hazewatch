@@ -16,6 +16,14 @@ import { RegionPicker } from './components/RegionPicker.tsx';
 const REFRESH_MS = 10 * 60 * 1000;
 const SENSITIVE = ' Elderly, children, pregnant women and people with heart or lung conditions should take extra care.';
 
+// Official explainer pages, checked 2026-10-06.
+const EXPLAINERS = [
+  { text: 'PSI (NEA)', href: 'https://www.nea.gov.sg/our-services/pollution-control/air-and-coastal-water-quality-monitoring' },
+  { text: 'Hourly PM2.5 bands (NEA)', href: 'https://haze.gov.sg/resources/1-hr-pm2.5-readings' },
+  { text: 'AQI (US EPA)', href: 'https://www.airnow.gov/aqi/aqi-basics/' },
+  { text: 'NowCast (US EPA)', href: 'https://forum.airnowtech.org/t/the-nowcast-for-pm2-5-and-pm10/172' },
+];
+
 function loadSavedRegion(): Region | null {
   try { return parseSavedRegion(localStorage.getItem('region')); } catch { return null; }
 }
@@ -124,6 +132,12 @@ export function App() {
               It reacts faster than PSI and is not an official reading.
             </p>
           )}
+          <p>
+            What the numbers mean:{' '}
+            {EXPLAINERS.map((l, i) => (
+              <span key={l.href}>{i > 0 && ' · '}<a href={l.href} target="_blank" rel="noopener noreferrer">{l.text}</a></span>
+            ))}
+          </p>
           <p>Data: NEA via <a href="https://data.gov.sg">data.gov.sg</a></p>
         </footer>
       </div>
