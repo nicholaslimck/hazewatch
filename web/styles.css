@@ -33,6 +33,10 @@ a { color: inherit; }
 select, button { font: inherit; color: inherit; }
 button { cursor: pointer; }
 .muted { color: var(--muted); }
+.map { display: block; width: 100%; max-width: 420px; margin: 4px auto 16px; }
+.map path { cursor: pointer; }
+.map path:focus-visible { outline: none; stroke: var(--ink); stroke-width: 3px; }
+.map-label { fill: var(--ink); pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
 .caption { font-size: 13px; color: var(--muted); margin-top: 10px; }
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;

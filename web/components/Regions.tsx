@@ -4,6 +4,7 @@ import type { ScaleSpec } from '../../shared/scale.ts';
 import { scaleFraction } from '../../shared/bands.ts';
 import type { NowResponse } from '../api.ts';
 import { regionName } from '../format.ts';
+import { RegionMap } from './RegionMap.tsx';
 
 export function Regions({ now, selected, onPick, spec }: { now: NowResponse; selected: Region; onPick: (r: Region) => void; spec: ScaleSpec }) {
   const rows = REGIONS.map((r) => {
@@ -14,6 +15,7 @@ export function Regions({ now, selected, onPick, spec }: { now: NowResponse; sel
   return (
     <section aria-labelledby="regions-title">
       <h2 id="regions-title">Around Singapore</h2>
+      <RegionMap now={now} selected={selected} onPick={onPick} spec={spec} />
       <ul className="rows">
         {rows.map(({ r, v }) => (
           <li key={r}>
