@@ -3,10 +3,17 @@ import type { Reading, Region } from '../shared/types.ts';
 
 const BASE = 'https://api-open.data.gov.sg/v2/real-time/api';
 
+const TS_RE = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\+08:00$/;
+
 export function parseNea(json: any): Reading[] {
   if (json?.code !== 0) throw new Error(`NEA error: ${json?.errorMsg}`);
   const out: Reading[] = [];
-  for (const item of json.data?.items ?? []) {
+  const items = Array.isArray(json.data?.items) ? json.data.items : [];
+  for (const item of items) {
+    if (!item || typeof item !== 'object' || !TS_RE.test(item.timestamp)) {
+      console.warn(`NEA: skipping malformed item: ${JSON.stringify(item)?.slice(0, 100)}`);
+      continue;
+    }
     for (const [metric, byRegion] of Object.entries<any>(item.readings ?? {})) {
       for (const region of REGIONS) {
         const value = byRegion?.[region];

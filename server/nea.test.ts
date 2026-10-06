@@ -78,3 +78,29 @@ test('fetchNea omits key when unset and throws on non-2xx', async () => {
     process.env = saved;
   }
 });
+
+test('skips malformed items, keeps the rest', () => {
+  const good = { timestamp: '2026-10-05T18:00:00+08:00', readings: { m: { north: 1 } } };
+  const json = {
+    code: 0,
+    data: {
+      items: [
+        { readings: { m: { north: 2 } } },
+        null,
+        { timestamp: '2026-10-05T10:00:00Z', readings: { m: { north: 3 } } },
+        good,
+      ],
+    },
+  };
+  const w = console.warn;
+  console.warn = () => {};
+  try {
+    assert.deepEqual(parseNea(json), [{ ts: good.timestamp, region: 'north', metric: 'm', value: 1 }]);
+  } finally {
+    console.warn = w;
+  }
+});
+
+test('non-array items yields no readings', () => {
+  assert.deepEqual(parseNea({ code: 0, data: { items: 'x' } }), []);
+});
