@@ -2,8 +2,10 @@ services:
   app:
     build: .
     ports: ["8080:8080"]
-    volumes: ["aq-data:/data"]
-    environment: [DATA_GOV_SG_API_KEY]
+    volumes:
+      - aq-data:/data
+      # - ./corp-root.pem:/certs/corp-root.pem:ro
+    environment: [DATA_GOV_SG_API_KEY, TELEGRAM_BOT_TOKEN, PUBLIC_URL, NODE_EXTRA_CA_CERTS]
     restart: unless-stopped
 
 volumes:
