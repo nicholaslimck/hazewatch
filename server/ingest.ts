@@ -26,7 +26,7 @@ export async function ingestOnce(store: Store, fetcher: Fetcher, state: IngestSt
   const errors: string[] = [];
   for (const e of ENDPOINTS) {
     try {
-      store.upsert(await fetcher(e));
+      store.upsert(await fetcher(e, sgtDate(Date.now())));
     } catch (err) {
       errors.push(`${e}: ${msg(err)}`);
     }

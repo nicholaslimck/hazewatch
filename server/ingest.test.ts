@@ -106,3 +106,12 @@ test('msUntilNext50', () => {
   assert.equal(msUntilNext50(Date.parse('2026-10-06T10:50:00Z')), 3_600_000);
   assert.equal(msUntilNext50(Date.parse('2026-10-06T10:51:00Z')), 3_540_000);
 });
+
+test('ingestOnce fetches today (SGT) for each endpoint', async () => {
+  const store = openDb(':memory:');
+  const calls: string[] = [];
+  const f: Fetcher = async (e, d) => { calls.push(`${e}:${d}`); return []; };
+  await ingestOnce(store, f, fresh());
+  const today = sgtDate(Date.now());
+  assert.deepEqual(calls, [`psi:${today}`, `pm25:${today}`]);
+});
