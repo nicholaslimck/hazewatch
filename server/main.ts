@@ -16,8 +16,12 @@ const server = serve({ fetch: createApp(store, state, 'dist').fetch, port }, () 
 
 let timer: NodeJS.Timeout;
 const tick = async () => {
-  await ingestOnce(store, neaFetcher, state);
   timer = setTimeout(tick, msUntilNext50(Date.now()));
+  try {
+    await ingestOnce(store, neaFetcher, state);
+  } catch (e) {
+    console.error('hourly ingest failed', e);
+  }
 };
 timer = setTimeout(tick, msUntilNext50(Date.now()));
 
