@@ -5,16 +5,14 @@ import { useHistory } from '../api.ts';
 import { fmtDate } from '../format.ts';
 
 const DAY = 86_400_000;
-const WEEKS = 13;
+const WEEKS = 14;
 
 type Cell = { date: string; value: number | undefined; inRange: boolean };
 
 // Monday-first weeks, one column per week, ending with the week that holds `end` (YYYY-MM-DD).
-// ponytail: 13 columns can't always hold all 91 days; when `end` isn't a Sunday the oldest
-// few days of the window fall off the left edge. Use 14 columns if that matters.
 function buildCells(end: string, byDate: Map<string, number>): Cell[] {
   const endMs = Date.parse(end); // UTC midnight
-  const startMs = endMs - 90 * DAY;
+  const startMs = endMs - 89 * DAY; // 90 dates inclusive, matching the server window
   const weekday = (new Date(endMs).getUTCDay() + 6) % 7; // Mon=0 … Sun=6
   const gridStart = endMs - weekday * DAY - (WEEKS - 1) * 7 * DAY;
   const cells: Cell[] = [];
