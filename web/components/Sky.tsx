@@ -32,7 +32,7 @@ function useSkyTokens(band: PsiBand | null) {
     const s = document.documentElement.style;
     for (const b of BANDS) {
       s.setProperty(`--bar-${b.key}`, dark ? b.darkBar : b.bar);
-      s.setProperty(`--cell-${b.key}`, dark ? b.darkColor : b.color);
+      s.setProperty(`--cell-${b.key}`, dark ? b.darkBar : b.bar);
     }
     if (band) {
       s.setProperty('--sky', dark ? band.darkColor : band.color);
