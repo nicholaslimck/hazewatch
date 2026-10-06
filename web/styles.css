@@ -101,7 +101,20 @@ button { cursor: pointer; }
 .hero-meta { font-size: 17px; margin-top: 12px; }
 .hero-foot { font-size: 15px; margin-top: 12px; }
 .small { font-size: 13px; }
-.scale { display: block; margin-top: 16px; overflow: visible; }
+.scale { display: block; overflow: visible; }
+.scale-wrap { position: relative; margin-top: 16px; }
+/* Invisible per-segment hit areas over the bar, 40px tall so they're easy to tap. */
+.scale-hit {
+  position: absolute; top: -12px; height: 40px; padding: 0;
+  background: transparent; border: 0; border-radius: 6px; cursor: help;
+}
+.scale-hit:focus-visible { outline: 2px solid var(--sky-ink); outline-offset: -8px; }
+.scale-tip {
+  position: absolute; bottom: calc(100% + 10px); z-index: 2; width: max-content; max-width: min(260px, 100%);
+  padding: 7px 10px; border-radius: 8px; pointer-events: none;
+  background: var(--sky-ink); color: var(--sky); font-size: 13px; line-height: 1.35;
+}
+.scale-tip strong { display: block; font-weight: 600; margin-bottom: 2px; }
 .n-top { display: flex; align-items: flex-end; gap: 16px; }
 .n-top .hero-meta { margin-top: 8px; }
 .gauge { display: block; flex: none; overflow: visible; }
