@@ -49,7 +49,7 @@ export function Calendar({ region, tick }: { region: Region; tick: number }) {
           if (!c.inRange) return <span key={c.date} className="cell out" />;
           if (c.value === undefined) return <span key={c.date} className={`cell empty${cls}`} title={`${fmtDay(c.date)}: no data`} />;
           const v = Math.round(c.value);
-          const label = `${fmtDay(c.date)}: PSI ${v}`;
+          const label = `${fmtDay(c.date)}: PSI ${v}, ${psiBand(v).label.toLowerCase()}`;
           return (
             <button
               key={c.date}

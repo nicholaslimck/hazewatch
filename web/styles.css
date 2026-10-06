@@ -82,6 +82,7 @@ button { cursor: pointer; }
 }
 .toggle button[aria-checked='true'] { background: var(--sky-ink); color: var(--sky); }
 :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.toggle button:focus-visible { outline-color: var(--sky-ink); }
 
 /* Heroes */
 .verdict { font-size: 36px; font-weight: 600; line-height: 1.08; letter-spacing: -0.01em; }
@@ -143,6 +144,8 @@ button.cell::after { content: ''; position: absolute; inset: -2px; }
 .cell.empty { background: var(--line); }
 .cell.out { visibility: hidden; }
 .cell.today { outline: 2px solid var(--ink); outline-offset: 1px; }
+/* After .today so focus wins; thicker and further out so today + focus stays distinct. */
+.cell:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; z-index: 1; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 11px; color: var(--muted); }
 .legend li { display: inline-flex; align-items: center; gap: 5px; }
 .swatch { width: 9px; height: 9px; border-radius: 2px; }

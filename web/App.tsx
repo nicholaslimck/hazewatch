@@ -77,7 +77,7 @@ export function App() {
     : null;
   const metrics = now !== null && now.ts !== null && region !== null ? now.regions[region] : undefined;
   const psi = metrics?.psi_twenty_four_hourly;
-  const band = psi === undefined ? null : psiBand(psi);
+  const band = psi === undefined ? null : psiBand(Math.round(psi));
   const message = now === null ? (loadFailed ? "Can't reach the server right now. Trying again shortly." : 'Loading…')
     : now.ts === null ? 'Waiting for first data from NEA'
     : region === null ? (needPicker ? null : 'Finding your region…')

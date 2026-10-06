@@ -1,7 +1,6 @@
 import { psiBand } from '../../shared/bands.ts';
-import { dominantPollutant } from '../../shared/verdict.ts';
+import { dominantPollutant, SCALE } from '../../shared/verdict.ts';
 import { fmtTime } from '../format.ts';
-import { SCALE } from './HeroSimple.tsx';
 
 const H = 130;
 const UG = 'µg/m³';

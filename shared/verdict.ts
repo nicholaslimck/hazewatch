@@ -1,6 +1,15 @@
 export type Pollutant = 'pm25' | 'pm10' | 'o3' | 'co' | 'so2';
 export const POLLUTANTS: readonly Pollutant[] = ['pm25', 'pm10', 'o3', 'co', 'so2'];
 
+// Band segments on a 0–400 scale, drawn in sky-ink at rising opacity.
+export const SCALE: { from: number; to: number; opacity: number }[] = [
+  { from: 0, to: 50, opacity: 0.18 },
+  { from: 50, to: 100, opacity: 0.3 },
+  { from: 100, to: 200, opacity: 0.42 },
+  { from: 200, to: 300, opacity: 0.54 },
+  { from: 300, to: 400, opacity: 0.66 },
+];
+
 export function verdict(psi: number): [string, string] {
   if (psi <= 50) return ['Clear skies.', 'A good day to be outside.'];
   if (psi <= 100) return ['A little hazy.', 'Fine for a run.'];

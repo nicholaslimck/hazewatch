@@ -1,17 +1,9 @@
 import { psiBand, trend } from '../../shared/bands.ts';
-import { verdict, bandPosition } from '../../shared/verdict.ts';
+import { verdict, bandPosition, SCALE } from '../../shared/verdict.ts';
 import type { HistoryPoint } from '../api.ts';
 import { fmtHour, fmtTime } from '../format.ts';
 
 const HOUR = 3600_000;
-// Band segments on a 0–400 scale, drawn in sky-ink at rising opacity.
-export const SCALE: { from: number; to: number; opacity: number }[] = [
-  { from: 0, to: 50, opacity: 0.18 },
-  { from: 50, to: 100, opacity: 0.3 },
-  { from: 100, to: 200, opacity: 0.42 },
-  { from: 200, to: 300, opacity: 0.54 },
-  { from: 300, to: 400, opacity: 0.66 },
-];
 const pct = (v: number) => `${(Math.min(Math.max(v, 0), 400) / 400) * 100}%`;
 
 // "Clearing since 3pm" etc., or null when there's no reading from exactly 3 hours before the latest.
