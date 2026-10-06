@@ -80,7 +80,7 @@ export function clipCloserTo(poly: Pt[], a: Pt, b: Pt): Pt[] {
     const fp = f(p)
     const fq = f(q)
     if (fp >= 0) out.push(p)
-    if (fp >= 0 !== fq >= 0) {
+    if (fp !== 0 && fq !== 0 && fp >= 0 !== fq >= 0) {
       const t = fp / (fp - fq)
       out.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])])
     }

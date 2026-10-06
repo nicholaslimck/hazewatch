@@ -37,6 +37,18 @@ test('voronoi cells partition the polygon', () => {
   sites.forEach((s, i) => assert.ok(contains(cells[i], s)))
 })
 
+test('voronoi on a concave U: areas sum, each site in its own cell, bisector cuts both arms', () => {
+  const u: Pt[] = [[0, 0], [30, 0], [30, 30], [20, 30], [20, 10], [10, 10], [10, 30], [0, 30]]
+  // Left-arm site vs base site: their bisector crosses the left arm and the base.
+  const sites: Pt[] = [[5, 25], [25, 25], [8, 3], [27, 3]]
+  const cells = voronoiCells(sites, u)
+  assert.ok(Math.abs(area(u) - 700) < 1e-9)
+  assert.ok(Math.abs(cells.reduce((s, c) => s + area(c), 0) - 700) < 1e-6)
+  sites.forEach((s, i) => assert.ok(contains(cells[i], s)))
+  assert.equal(contains(cells[0], [15, 20]), false) // the notch is outside every cell
+  cells.forEach((c) => assert.equal(contains(c, [15, 20]), false))
+})
+
 test('toPath formats a triangle', () => {
   assert.equal(toPath([[0, 0], [1, 0], [0, 1]]), 'M0.0 0.0L1.0 0.0L0.0 1.0Z')
 })
