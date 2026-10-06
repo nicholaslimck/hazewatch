@@ -65,7 +65,7 @@ export function Sky({ region, onRegion, onLocate, view, onView, band, message, m
               {region === null && <option value="" disabled>Choose region</option>}
               {REGIONS.map((r) => <option key={r} value={r}>{regionName(r)}</option>)}
             </select>
-            <span className="caret" aria-hidden="true">▾</span>
+            <span className="region-face" aria-hidden="true">{region ? regionName(region) : 'Choose region'} ▾</span>
           </label>
           <button type="button" className="locate" onClick={onLocate} aria-label="Use my location" title="Use my location">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2">

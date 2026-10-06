@@ -65,12 +65,11 @@ button { cursor: pointer; }
 .sky-body { margin-top: auto; }
 .where { display: flex; align-items: center; gap: 4px; }
 .region { position: relative; display: inline-flex; align-items: center; }
-.region select {
-  appearance: none; background: transparent; border: 0; padding: 0 22px 0 0;
-  min-height: 44px; font-size: 15px; font-weight: 600; cursor: pointer;
-}
+/* Visible face hugs the name; the native select sits invisibly on top so the picker still works. */
+.region-face { display: inline-flex; align-items: center; min-height: 44px; font-size: 15px; font-weight: 600; white-space: nowrap; }
+.region select { position: absolute; inset: 0; width: 100%; opacity: 0; appearance: none; border: 0; cursor: pointer; font-size: 15px; }
+.region:has(select:focus-visible) .region-face { outline: 2px solid var(--sky-ink); outline-offset: 2px; border-radius: 4px; }
 .region option { color: var(--ink); background: var(--bg); }
-.caret { position: absolute; right: 4px; pointer-events: none; }
 .locate {
   display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; background: transparent; border: 0; border-radius: 999px;
