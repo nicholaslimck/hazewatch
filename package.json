@@ -6,7 +6,7 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "test": "node --test \"**/*.test.ts\"",
+    "test": "node --disable-warning=ExperimentalWarning --test \"**/*.test.ts\"",
     "dev:server": "node --watch server/main.ts",
     "dev:web": "vite",
     "build": "vite build",
