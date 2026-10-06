@@ -48,10 +48,10 @@ export function openDb(path: string): Store {
       if (!top.ts) return { ts: null, ageMinutes: null, regions: {} };
       const rows = db
         .prepare(
-          `SELECT region, metric, value FROM readings r
-           WHERE ts = (SELECT MAX(ts) FROM readings WHERE region = r.region AND metric = r.metric)`,
+          // Bare column with MAX() takes the value from the max row; the 7-day bound avoids a full scan.
+          `SELECT region, metric, value, MAX(ts) AS ts FROM readings WHERE ts >= ? GROUP BY region, metric`,
         )
-        .all() as { region: Region; metric: string; value: number }[];
+        .all(sgtIso(Date.parse(top.ts) - 7 * 24 * HOUR)) as { region: Region; metric: string; value: number }[];
       const regions: NowResponse['regions'] = {};
       for (const x of rows) (regions[x.region] ??= {})[x.metric] = x.value;
       return { ts: top.ts, ageMinutes: Math.round((nowMs - Date.parse(top.ts)) / 60000), regions };
