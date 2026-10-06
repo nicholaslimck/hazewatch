@@ -21,13 +21,17 @@ const bot = token ? createBot({ token, store }) : null;
 bot?.start();
 
 // Alerts only follow a successful ingest, so a failed hour never alerts on stale data.
+let alerting = false; // startup ingest and the first tick can overlap
 const ingestAndAlert = async () => {
   await ingestOnce(store, neaFetcher, state);
-  if (!bot || state.lastError !== null) return;
+  if (!bot || state.lastError !== null || alerting) return;
+  alerting = true;
   try {
     await runAlerts(store, bot.send, Date.now());
   } catch (e) {
     console.error('alert run failed', e);
+  } finally {
+    alerting = false;
   }
 };
 

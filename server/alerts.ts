@@ -60,7 +60,7 @@ export async function runAlerts(
       if (e instanceof SendError && e.status === 403) {
         store.unsubscribe(sub.chatId);
         dropped++;
-      } // else leave the level; the next tick retries
+      } else console.warn('alert send failed', e instanceof SendError ? e.status : String(e)); // leave the level; the next tick retries
     }
   }
   return { sent, dropped };

@@ -87,6 +87,14 @@ test('runAlerts keeps level on send failure', async () => {
   assert.deepEqual(db.subscriptions().map((s) => s.notifiedLevel), [0, 1]);
 });
 
+test('runAlerts logs non-403 failures without the request detail', async (t) => {
+  const warn = t.mock.method(console, 'warn', () => {});
+  const db = setup(135);
+  await runAlerts(db, async () => { throw new SendError(500); }, at('12:00'));
+  assert.equal(warn.mock.callCount(), 1);
+  assert.deepEqual(warn.mock.calls[0].arguments, ['alert send failed', 500]);
+});
+
 test('runAlerts drops a subscription on 403', async () => {
   const db = setup(135);
   const res = await runAlerts(db, async () => { throw new SendError(403); }, at('12:00'));
