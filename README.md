@@ -22,7 +22,7 @@ Optional. The bot messages people when their region's 24h PSI turns unhealthy, c
 
 1. Message @BotFather, send `/newbot`, and pick a name and username (suggested: `@HazeCheckSG_bot`).
 2. Set `TELEGRAM_BOT_TOKEN` to the token it gives you, in your shell or `.env`. Without it the bot stays off.
-3. Restart. Message the bot `/start`, pick a region, then try `/now`. `/stop` unsubscribes.
+3. Restart. Message the bot `/start` (or `/region` to change it), pick a region, then try `/now`. `/stop` unsubscribes.
 
 The bot is open to anyone who finds it. Limits: 500 subscribers, one reply per chat every 3 seconds, and it never echoes what people type.
 
@@ -30,7 +30,7 @@ Behind a corporate proxy that re-signs TLS, Node won't trust the proxy's certifi
 
 ## Public URL (optional)
 
-Set `PUBLIC_URL` to the address the app is served from (for example `https://haze.example.com`). It is exposed at `GET /api/config` as `{ "publicUrl": ... }`, and is `null` when unset.
+Set `PUBLIC_URL` to the address the app is served from (for example `https://haze.example.com`). It is exposed at `GET /api/config` as `{ "publicUrl": ... }`, and is `null` when unset. The web app adds it as the link when sharing the card.
 
 ## Local development
 

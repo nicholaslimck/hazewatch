@@ -40,8 +40,7 @@ function loadScale(): Scale {
 export function App() {
   const [region, setRegion] = useState<Region | null>(loadSavedRegion);
   const [needPicker, setNeedPicker] = useState(false);
-  // `at` is when this response arrived, so staleness keeps growing if later fetches fail.
-  const [data, setData] = useState<{ now: NowResponse; at: number } | null>(null);
+  const [data, setData] = useState<{ now: NowResponse } | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [tick, setTick] = useState(0);
   const [view, setView] = useState<View>(loadView);
@@ -83,7 +82,7 @@ export function App() {
   useEffect(() => {
     let live = true;
     getNow()
-      .then((now) => { if (live) { setData({ now, at: Date.now() }); setLoadFailed(false); } })
+      .then((now) => { if (live) { setData({ now }); setLoadFailed(false); } })
       .catch(() => { if (live) setLoadFailed(true); }); // keep last good data on screen
     return () => { live = false; };
   }, [tick]);
