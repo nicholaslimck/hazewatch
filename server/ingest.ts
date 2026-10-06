@@ -45,14 +45,16 @@ export async function backfill(
   fetcher: Fetcher,
   opts: { days: number; todaySgt: string; sleepMs: number },
 ): Promise<number> {
-  const have = store.daysWithData();
+  const have = { psi: store.daysWithData('psi_twenty_four_hourly'), pm25: store.daysWithData('pm25_one_hourly') };
   const end = Date.parse(`${opts.todaySgt}T00:00:00Z`);
   let fetched = 0;
   for (let i = opts.days - 1; i >= 0; i--) {
     const date = new Date(end - i * 24 * HOUR).toISOString().slice(0, 10);
-    if (have.has(date)) continue;
+    // Today is always refetched: hourly ingest may have stored only the latest hours.
+    const todo = ENDPOINTS.filter((e) => date === opts.todaySgt || !have[e].has(date));
+    if (!todo.length) continue;
     let ok = false, rows = 0;
-    for (const e of ENDPOINTS) {
+    for (const e of todo) {
       try {
         const rs = await fetcher(e, date);
         store.upsert(rs);

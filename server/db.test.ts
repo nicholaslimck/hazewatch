@@ -58,3 +58,11 @@ test('daysWithData', () => {
   db.upsert([r(hour('2026-10-04', 1), 1), r(hour('2026-10-05', 1), 1), r(hour('2026-10-05', 2), 1)]);
   assert.deepEqual(db.daysWithData(), new Set(['2026-10-04', '2026-10-05']));
 });
+
+test('daysWithData filters by metric', () => {
+  const db = openDb(':memory:');
+  db.upsert([r(hour('2026-10-04', 1), 1), r(hour('2026-10-05', 1), 1, 'pm25_one_hourly')]);
+  assert.deepEqual(db.daysWithData('psi_twenty_four_hourly'), new Set(['2026-10-04']));
+  assert.deepEqual(db.daysWithData('pm25_one_hourly'), new Set(['2026-10-05']));
+  assert.deepEqual(db.daysWithData('nope'), new Set());
+});

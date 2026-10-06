@@ -8,7 +8,7 @@ export type Store = {
   count(): number;
   now(nowMs?: number): NowResponse;
   history(range: '24h' | '7d' | '90d', metric: string, region?: Region): HistoryPoint[];
-  daysWithData(): Set<string>;
+  daysWithData(metric?: string): Set<string>;
 };
 
 const HOUR = 3600_000;
@@ -76,8 +76,10 @@ export function openDb(path: string): Store {
         .prepare(`SELECT ts, region, value FROM readings WHERE metric = ?${regionSql} AND ts > ? ORDER BY ts, region`)
         .all(...args, cutoff) as HistoryPoint[];
     },
-    daysWithData() {
-      const rows = db.prepare('SELECT DISTINCT substr(ts,1,10) AS d FROM readings').all() as { d: string }[];
+    daysWithData(metric) {
+      const rows = (metric
+        ? db.prepare('SELECT DISTINCT substr(ts,1,10) AS d FROM readings WHERE metric = ?').all(metric)
+        : db.prepare('SELECT DISTINCT substr(ts,1,10) AS d FROM readings').all()) as { d: string }[];
       return new Set(rows.map((x) => x.d));
     },
   };

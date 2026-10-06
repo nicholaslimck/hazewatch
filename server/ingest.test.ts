@@ -25,7 +25,12 @@ test('ingestOnce stores both endpoints', async () => {
 test('ingestOnce tolerates empty items', async () => {
   const store = openDb(':memory:');
   const s = fresh();
-  await ingestOnce(store, async () => [], s);
+  const calls: string[] = [];
+  const w = console.warn, e = console.error;
+  console.warn = (...a) => { calls.push(`warn:${a.join(' ')}`); };
+  console.error = (...a) => { calls.push(`error:${a.join(' ')}`); };
+  try { await ingestOnce(store, async () => [], s); } finally { console.warn = w; console.error = e; }
+  assert.deepEqual(calls, []);
   assert.equal(store.count(), 0);
   assert.equal(s.lastError, null);
   assert.ok(s.lastIngestAt);
@@ -48,7 +53,7 @@ test('ingestOnce partial failure', async () => {
 
 test('backfill skips existing days', async () => {
   const store = openDb(':memory:');
-  store.upsert([r('2026-10-05T12:00:00+08:00', 'pm25_one_hourly')]);
+  store.upsert([r('2026-10-05T12:00:00+08:00', 'pm25_one_hourly'), r('2026-10-05T12:00:00+08:00', 'psi_twenty_four_hourly')]);
   const calls: string[] = [];
   const f: Fetcher = async (e, d) => { calls.push(`${e}:${d}`); return [r(`${d}T12:00:00+08:00`, 'pm25_one_hourly')]; };
   const n = await backfill(store, f, { days: 3, todaySgt: '2026-10-06', sleepMs: 0 });
@@ -67,6 +72,28 @@ test('backfill continues past a failing day', async () => {
   try { n = await backfill(store, f, { days: 3, todaySgt: '2026-10-06', sleepMs: 0 }); } finally { restore(); }
   assert.equal(n, 2);
   assert.equal(store.daysWithData().has('2026-10-06'), true);
+});
+
+const metricOf = (e: string) => (e === 'psi' ? 'psi_twenty_four_hourly' : 'pm25_one_hourly');
+
+test('backfill fetches the missing metric only', async () => {
+  const store = openDb(':memory:');
+  store.upsert([r('2026-10-05T12:00:00+08:00', 'pm25_one_hourly')]);
+  const calls: string[] = [];
+  const f: Fetcher = async (e, d) => { calls.push(`${e}:${d}`); return [r(`${d}T12:00:00+08:00`, metricOf(e))]; };
+  await backfill(store, f, { days: 2, todaySgt: '2026-10-06', sleepMs: 0 });
+  assert.ok(calls.includes('psi:2026-10-05'));
+  assert.ok(!calls.includes('pm25:2026-10-05'));
+});
+
+test('backfill always refetches today for both endpoints', async () => {
+  const store = openDb(':memory:');
+  store.upsert([r('2026-10-06T01:00:00+08:00', 'pm25_one_hourly'), r('2026-10-06T01:00:00+08:00', 'psi_twenty_four_hourly')]);
+  const calls: string[] = [];
+  const f: Fetcher = async (e, d) => { calls.push(`${e}:${d}`); return [r(`${d}T02:00:00+08:00`, metricOf(e))]; };
+  const n = await backfill(store, f, { days: 1, todaySgt: '2026-10-06', sleepMs: 0 });
+  assert.deepEqual(calls, ['psi:2026-10-06', 'pm25:2026-10-06']);
+  assert.equal(n, 1);
 });
 
 test('sgtDate', () => {
