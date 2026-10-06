@@ -6,10 +6,11 @@ import assert from 'node:assert/strict';
 import { openDb } from './db.ts';
 import { createApp } from './app.ts';
 import { REGIONS } from '../shared/types.ts';
+import type { IngestState } from './ingest.ts';
 
 const mk = () => {
   const store = openDb(':memory:');
-  const state = { lastIngestAt: null, lastError: null };
+  const state: IngestState = { lastIngestAt: null, lastError: null };
   return { store, state, app: createApp(store, state) };
 };
 
