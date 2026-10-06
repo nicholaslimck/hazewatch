@@ -1,6 +1,20 @@
 const CACHE = 'hazecheck';
 
-self.addEventListener('install', () => self.skipWaiting());
+// Precache the shell so the first offline launch works; failures never block install.
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE);
+        const res = await fetch('/');
+        await cache.put('/', res.clone());
+        const html = await res.text();
+        await cache.addAll([...new Set(Array.from(html.matchAll(/\/assets\/[^"']+/g), (m) => m[0]))].concat('/api/now'));
+      } catch {}
+      await self.skipWaiting();
+    })(),
+  );
+});
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
 // Network first so a reading is never older than it has to be; the cache only answers when offline.
