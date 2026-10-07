@@ -102,7 +102,7 @@ test('cap: 501st subscriber is refused', () => {
   const s = seeded();
   for (let i = 100; i < 600; i++) s.subscribe(i, 'central', 0);
   const calls = run(s, cb('region:central', 1));
-  assert.ok(text(calls).includes('HazeCheck is full right now. Try again later.'));
+  assert.ok(text(calls).includes('HazeWatch is full right now. Try again later.'));
   assert.equal(s.subscriptionCount(), 500);
 });
 

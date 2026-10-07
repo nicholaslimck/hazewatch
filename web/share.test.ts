@@ -9,7 +9,7 @@ test('shareText for PSI and AQI', () => {
 });
 
 test('shareFilename uses the SGT date', () => {
-  assert.equal(shareFilename('central', '2026-10-06T23:00:00+08:00'), 'hazecheck-central-2026-10-06.png');
+  assert.equal(shareFilename('central', '2026-10-06T23:00:00+08:00'), 'hazewatch-central-2026-10-06.png');
 });
 
 test('shareMode picks files when canShare accepts', () => {

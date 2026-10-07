@@ -1,4 +1,4 @@
-const CACHE = 'hazecheck';
+const CACHE = 'hazewatch';
 
 // Precache the shell so the first offline launch works; failures never block install.
 self.addEventListener('install', (e) => {

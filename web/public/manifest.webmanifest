@@ -1,6 +1,6 @@
 {
-  "name": "HazeCheck",
-  "short_name": "HazeCheck",
+  "name": "HazeWatch",
+  "short_name": "HazeWatch",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F4F6F7",

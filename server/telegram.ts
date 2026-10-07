@@ -18,7 +18,7 @@ const MAX_SUBS = 500;
 const REPLY_GAP_MS = 3000;
 const BACKOFF = [5000, 30000, 60000];
 const HELP = 'Send /start or /region to pick a region, /now for the current reading, or /stop to unsubscribe.';
-const FULL = 'HazeCheck is full right now. Try again later.';
+const FULL = 'HazeWatch is full right now. Try again later.';
 
 export function nowText(store: Store, region: Region): string {
   const { ts, regions } = store.now();

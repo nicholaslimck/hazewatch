@@ -20,7 +20,7 @@ The app works without a key. If you hit data.gov.sg rate limits, set `DATA_GOV_S
 
 Optional. The bot messages people when their region's 24h PSI turns unhealthy, changes band or clears, and never between 11pm and 7am SGT.
 
-1. Message @BotFather, send `/newbot`, and pick a name and username (suggested: `@HazeCheckSG_bot`).
+1. Message @BotFather, send `/newbot`, and pick a name and username (suggested: `@HazeWatchSG_bot`).
 2. Set `TELEGRAM_BOT_TOKEN` to the token it gives you, in your shell or `.env`. Without it the bot stays off.
 3. Restart. Message the bot `/start` (or `/region` to change it), pick a region, then try `/now`. `/stop` unsubscribes.
 

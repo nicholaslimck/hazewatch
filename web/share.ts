@@ -8,7 +8,7 @@ export const shareText = (spec: ScaleSpec, region: Region, value: number) =>
   `${regionName(region)} ${spec.name} ${value}, ${spec.band(value).label.toLowerCase()}. ${spec.verdict(value)[1]}`;
 
 // ts is +08:00, so its first 10 chars are the SGT date.
-export const shareFilename = (region: Region, ts: string) => `hazecheck-${region}-${ts.slice(0, 10)}.png`;
+export const shareFilename = (region: Region, ts: string) => `hazewatch-${region}-${ts.slice(0, 10)}.png`;
 
 export const shareMode = (nav: { canShare?: (d: ShareData) => boolean }, file: File): 'files' | 'download' =>
   nav.canShare?.({ files: [file] }) ? 'files' : 'download';
@@ -37,7 +37,7 @@ export async function drawCard({ spec, region, value, ts }: CardOpts): Promise<B
   text(`${spec.name} ${value}`, 400, 600, 200);
   text(line1, 560, 400, 72); text(line2, 650, 400, 72);
   text(`${band.label} · ${fmtTime(ts)}, ${fmtDay(ts.slice(0, 10))}`, 780, 400, 40);
-  text('HazeCheck', 1080 - 88, 600, 36);
+  text('HazeWatch', 1080 - 88, 600, 36);
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png'));
 }
