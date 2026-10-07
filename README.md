@@ -16,7 +16,7 @@ A self-hosted dashboard for Singapore's air quality. It pulls PSI and PM2.5 read
 docker compose up -d
 ```
 
-Compose pulls `ghcr.io/nicholaslimck/hazewatch:latest`, which GitHub Actions builds from `main` for amd64 and arm64. To pin a release, change the tag in `compose.yaml` to a version such as `:1.2.0`. Then open http://localhost:8080.
+Compose pulls `ghcr.io/nicholaslimck/hazewatch:latest`, which GitHub Actions builds from `main` for amd64 and arm64. To pin a release, change the tag in `compose.yaml` to a version such as `:1.2.0`. Then open http://localhost:8081 (the host port defaults to 8081; set `HOST_PORT` to change it).
 
 The first start backfills about 90 days of history, which takes a few minutes. Data is kept in the `aq-data` Docker volume, so restarts skip days already stored.
 
@@ -29,6 +29,7 @@ All settings are environment variables. Set them in your shell or in a `.env` fi
 | `DATA_GOV_SG_API_KEY` | Optional. Raises your data.gov.sg rate limit. The app works without it. |
 | `TELEGRAM_BOT_TOKEN` | Enables the Telegram bot. Without it the bot stays off. |
 | `PUBLIC_URL` | The address the app is served from, for example `https://haze.example.com`. Exposed at `GET /api/config` as `{ "publicUrl": ... }` (`null` when unset) and used as the link on the share card. |
+| `HOST_PORT` | Host port the app is published on (default `8081`). The container always listens on `8080`. |
 | `PORT`, `DB_PATH` | Server port (default `8080`) and SQLite path (default `./data/aq.db`). |
 
 ## Telegram alerts

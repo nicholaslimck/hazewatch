@@ -1,7 +1,7 @@
 services:
   app:
     image: ghcr.io/nicholaslimck/hazewatch:latest
-    ports: ["8080:8080"]
+    ports: ["${HOST_PORT:-8081}:8080"]
     volumes:
       - aq-data:/data
       # - ./corp-root.pem:/certs/corp-root.pem:ro
