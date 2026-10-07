@@ -1,11 +1,13 @@
 import type { Region } from './types.ts';
-import type { ScaleSpec } from './scale.ts';
+import type { Scale, ScaleSpec } from './scale.ts';
 import { fmtDay, fmtTime, regionName } from './format.ts';
 
-// What the card needs beyond the scale: what the site's share button has, and what the server has at
-// alert time. Kept separate so the server can build one without importing a scale spec.
-export type CardInput = { region: Region; value: number; ts: string };
-export type CardOpts = { spec: ScaleSpec } & CardInput;
+// One reading, independent of the scale it is drawn on.
+export type CardRef = { region: Region; value: number; ts: string };
+// What the bot passes around: a reading plus the scale its recipient watches.
+export type CardInput = CardRef & { scale: Scale };
+// What the drawing code needs: a reading plus the resolved scale spec.
+export type CardOpts = CardRef & { spec: ScaleSpec };
 
 export const CARD = 1080;
 const PAD = 88;
@@ -45,14 +47,17 @@ export function drawCard(ctx: CardCtx, { spec, region, value, ts }: CardOpts): v
   ctx.fillStyle = band.onColor;
   ctx.textBaseline = 'alphabetic';
   const font = (px: number, w: number) => { ctx.font = `${w} ${px}px 'Bricolage Grotesque Variable', system-ui, sans-serif`; };
-  const text = (s: string, y: number, w: number, start: number) => {
-    const px = fitFont((p) => { font(p, w); return ctx.measureText(s).width; }, start, COLUMN, 40);
+  const text = (s: string, y: number, w: number, start: number, floor = 40) => {
+    const px = fitFont((p) => { font(p, w); return ctx.measureText(s).width; }, start, COLUMN, floor);
     font(px, w);
     ctx.fillText(s, PAD, y);
   };
   text(regionName(region), 160, 600, 56);
   text(`${spec.name} ${value}`, 400, 600, 200);
   text(line1, 560, 400, 72); text(line2, 650, 400, 72);
-  text(`${band.label} \u00b7 ${fmtTime(ts)}, ${fmtDay(ts.slice(0, 10))}`, 780, 400, 40);
+  // AQI's sensitive-groups label ('Unhealthy for sensitive groups') is wider than the 904px column at the
+  // 40px this line starts at, so it is allowed to shrink rather than run off the card. Every other band
+  // on both scales fits at 40, so this only ever applies to that one label.
+  text(`${band.label} \u00b7 ${fmtTime(ts)}, ${fmtDay(ts.slice(0, 10))}`, 780, 400, 40, 28);
   text('HazeWatch', CARD - PAD, 600, 36);
 }

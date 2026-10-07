@@ -38,7 +38,7 @@ The bot messages people when their region's 24h PSI turns unhealthy, changes ban
 
 1. Message @BotFather, send `/newbot`, and pick a name and username (suggested: `@HazeWatchSG_bot`).
 2. Set `TELEGRAM_BOT_TOKEN` to the token it gives you.
-3. Restart. Message the bot `/start` (or `/region` to change it), pick a region, then try `/now`. `/stop` unsubscribes.
+3. Restart. Message the bot `/start` (or `/region` to change it), pick a region, then try `/now`. `/scale` switches between PSI and AQI. `/stop` unsubscribes.
 
 The bot is open to anyone who finds it. Limits: 500 subscribers, one reply per chat every 3 seconds, and it never echoes what people type.
 

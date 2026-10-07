@@ -1,5 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
+import { rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { openDb } from './db.ts';
 import type { Reading } from '../shared/types.ts';
 
@@ -95,7 +99,19 @@ test('subscribe upserts and keeps one row per chat', () => {
   const db = openDb(':memory:');
   db.subscribe(1, 'central', 0);
   db.subscribe(1, 'west', 2);
-  assert.deepEqual(db.subscriptions(), [{ chatId: 1, region: 'west', notifiedLevel: 2 }]);
+  assert.deepEqual(db.subscriptions(), [{ chatId: 1, region: 'west', scale: 'psi', notifiedLevel: 2 }]);
+});
+
+test('subscribe defaults to PSI and stores an explicit scale', () => {
+  const db = openDb(':memory:');
+  db.subscribe(1, 'central', 0);
+  db.subscribe(2, 'east', 1, 'aqi');
+  assert.deepEqual(db.subscriptions(), [
+    { chatId: 1, region: 'central', scale: 'psi', notifiedLevel: 0 },
+    { chatId: 2, region: 'east', scale: 'aqi', notifiedLevel: 1 },
+  ]);
+  db.subscribe(1, 'central', 2, 'aqi'); // same chat: upsert swaps the scale
+  assert.deepEqual(db.subscriptions()[0], { chatId: 1, region: 'central', scale: 'aqi', notifiedLevel: 2 });
 });
 
 test('unsubscribe and setNotified', () => {
@@ -104,7 +120,7 @@ test('unsubscribe and setNotified', () => {
   db.subscribe(2, 'east', 0);
   db.setNotified(1, 3);
   db.unsubscribe(2);
-  assert.deepEqual(db.subscriptions(), [{ chatId: 1, region: 'central', notifiedLevel: 3 }]);
+  assert.deepEqual(db.subscriptions(), [{ chatId: 1, region: 'central', scale: 'psi', notifiedLevel: 3 }]);
 });
 
 test('subscriptionCount', () => {
@@ -124,4 +140,25 @@ test('repeated now() calls update ageMinutes without losing data', () => {
   assert.equal(b.ageMinutes, 150); // still live after the first call cached the payload
   assert.equal(a.ts, b.ts);
   assert.deepEqual(a.regions, b.regions);
+});
+
+test('an existing subscriptions table without the scale column is migrated in place', () => {
+  const path = join(tmpdir(), `hazewatch-migrate-${process.pid}-${Date.now()}.db`);
+  const old = new DatabaseSync(path);
+  old.exec(`CREATE TABLE subscriptions (
+    chat_id        INTEGER PRIMARY KEY,
+    region         TEXT NOT NULL,
+    notified_level INTEGER NOT NULL,
+    created_at     TEXT NOT NULL
+  )`);
+  old.prepare('INSERT INTO subscriptions (chat_id, region, notified_level, created_at) VALUES (?, ?, ?, ?)').run(1, 'central', 1, '2026-10-01T00:00:00+08:00');
+  old.close();
+
+  const db = openDb(path);
+  // The existing row survives and keeps watching PSI, which is the scale its stored level was measured in.
+  assert.deepEqual(db.subscriptions(), [{ chatId: 1, region: 'central', scale: 'psi', notifiedLevel: 1 }]);
+  db.subscribe(2, 'east', 0, 'aqi');
+  assert.equal(db.subscriptions()[1].scale, 'aqi');
+  db.close();
+  rmSync(path, { force: true });
 });

@@ -1,11 +1,11 @@
 import { REGIONS } from '../shared/types.ts';
 import type { Region } from '../shared/types.ts';
 import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
-import { psiBand } from '../shared/bands.ts';
-import { verdict } from '../shared/verdict.ts';
 import { fmtTime, regionName } from '../shared/format.ts';
 import { shareFilename } from '../shared/card.ts';
 import type { CardInput } from '../shared/card.ts';
+import { SCALES } from '../shared/scale.ts';
+import type { Scale, ScaleSpec } from '../shared/scale.ts';
 import type { Store } from './db.ts';
 import { level, SendError } from './alerts.ts';
 import { renderCard } from './card.ts';
@@ -23,23 +23,27 @@ export type ApiCall =
 const MAX_SUBS = 500;
 const REPLY_GAP_MS = 3000;
 const BACKOFF = [5000, 30000, 60000];
-const HELP = 'Send /start or /region to pick a region, /now for the current reading, or /stop to unsubscribe.';
+const HELP = 'Send /start or /region to pick a region, /scale to switch between PSI and AQI, /now for the current reading, or /stop to unsubscribe.';
 const FULL = 'HazeWatch is full right now. Try again later.';
+const SCALE_KEYBOARD = { inline_keyboard: [[SCALES.psi, SCALES.aqi].map((s) => ({ text: s.name, callback_data: `scale:${s.name.toLowerCase()}` }))] };
 
-export function nowText(store: Store, region: Region): string {
+export function nowText(store: Store, region: Region, spec: ScaleSpec): string {
   const { ts, regions } = store.now();
-  const psi = regions[region]?.psi_twenty_four_hourly;
-  if (psi === undefined || ts === null) return `${regionName(region)} · no reading yet.`;
-  return `${regionName(region)} · PSI ${Math.round(psi)}, ${psiBand(psi).label.toLowerCase()}. ${verdict(psi)[1]} Updated ${fmtTime(ts)}`;
+  const v = spec.value(regions[region] ?? {});
+  if (v === undefined || ts === null) return `${regionName(region)} · no reading yet.`;
+  return `${regionName(region)} · ${spec.name} ${Math.round(v)}, ${spec.band(v).label.toLowerCase()}. ${spec.verdict(v)[1]} Updated ${fmtTime(ts)}`;
 }
 
 // Null when there is nothing to draw yet; the card quotes the same rounded value as the message.
-export function cardInput(store: Store, region: Region): CardInput | null {
+export function cardInput(store: Store, region: Region, scale: Scale): CardInput | null {
   const { ts, regions } = store.now();
-  const psi = regions[region]?.psi_twenty_four_hourly;
-  if (ts === null || psi === undefined) return null;
-  return { region, value: Math.round(psi), ts };
+  const v = SCALES[scale].value(regions[region] ?? {});
+  if (ts === null || v === undefined) return null;
+  return { scale, region, value: Math.round(v), ts };
 }
+
+const watchText = (region: Region, spec: ScaleSpec) =>
+  `You'll get a message when ${regionName(region)}'s ${spec.name} turns unhealthy, changes band, or clears. Nothing between 11pm and 7am.`;
 
 export function handleUpdate(update: TgUpdate, ctx: { store: Store; nowMs: number; lastReply: Map<number, number> }): ApiCall[] {
   const { store, nowMs, lastReply } = ctx;
@@ -55,25 +59,36 @@ export function handleUpdate(update: TgUpdate, ctx: { store: Store; nowMs: numbe
     lastReply.set(chatId, nowMs);
   }
   const say = (text: string, extra: Record<string, unknown> = {}) => out.push({ method: 'sendMessage', body: { chat_id: chatId, text, ...extra } });
+  const mine = () => store.subscriptions().find((s) => s.chatId === chatId);
+  // The level the current reading already sits at, so subscribing or switching scale doesn't fire on the next tick.
+  const anchor = (region: Region, scale: Scale) => level(SCALES[scale], SCALES[scale].value(store.now().regions[region] ?? {}) ?? 0, 0);
 
   const subscribe = (region: Region) => {
-    if (store.subscriptionCount() >= MAX_SUBS && !store.subscriptions().some((s) => s.chatId === chatId)) return say(FULL);
-    // Start at the level the confirmation already shows, so the first tick doesn't repeat it.
-    store.subscribe(chatId, region, level(store.now().regions[region]?.psi_twenty_four_hourly ?? 0, 0));
-    say(
-      `${nowText(store, region)}\n\nYou'll get a message when ${regionName(region)}'s 24h PSI turns unhealthy, changes band, or clears. Nothing between 11pm and 7am.`,
-      { reply_markup: { remove_keyboard: true } },
-    );
+    if (store.subscriptionCount() >= MAX_SUBS && !mine()) return say(FULL);
+    const scale = mine()?.scale ?? 'psi'; // swapping region keeps the scale you chose
+    store.subscribe(chatId, region, anchor(region, scale), scale);
+    say(`${nowText(store, region, SCALES[scale])}\n\n${watchText(region, SCALES[scale])}`, { reply_markup: { remove_keyboard: true } });
+  };
+
+  const setScale = (scale: Scale) => {
+    const sub = mine();
+    if (!sub) return say('Pick a region first with /start.');
+    // Re-anchor: notified_level is stored in the old scale's units and means nothing in the new one.
+    store.subscribe(chatId, sub.region, anchor(sub.region, scale), scale);
+    say(`${nowText(store, sub.region, SCALES[scale])}\n\n${watchText(sub.region, SCALES[scale])}`);
   };
 
   if (q) {
-    const arg = q.data?.startsWith('region:') ? q.data.slice(7) : '';
-    if (arg === 'nearest') {
+    const data = q.data ?? '';
+    if (data.startsWith('scale:')) {
+      const scale = data.slice(6);
+      scale === 'psi' || scale === 'aqi' ? setScale(scale) : say(HELP);
+    } else if (data === 'region:nearest') {
       say('Share your location and I will pick the nearest region.', {
         reply_markup: { keyboard: [[{ text: 'Share my location', request_location: true }]], one_time_keyboard: true, resize_keyboard: true },
       });
     } else {
-      const region = parseSavedRegion(arg);
+      const region = parseSavedRegion(data.startsWith('region:') ? data.slice(7) : '');
       region ? subscribe(region) : say(HELP);
     }
     return out;
@@ -96,14 +111,19 @@ export function handleUpdate(update: TgUpdate, ctx: { store: Store; nowMs: numbe
         },
       });
       break;
+    case '/scale': {
+      const arg = m.text!.split(/[\s@]/)[1]?.toLowerCase();
+      arg === 'psi' || arg === 'aqi' ? setScale(arg) : say('Which scale?', { reply_markup: SCALE_KEYBOARD });
+      break;
+    }
     case '/now': {
-      const sub = store.subscriptions().find((s) => s.chatId === chatId);
+      const sub = mine();
       if (!sub) {
         say('Pick a region first with /start.');
         break;
       }
-      const text = nowText(store, sub.region);
-      const card = cardInput(store, sub.region);
+      const text = nowText(store, sub.region, SCALES[sub.scale]);
+      const card = cardInput(store, sub.region, sub.scale);
       if (card) out.push({ method: 'sendCard', chatId, text, card });
       else say(text);
       break;

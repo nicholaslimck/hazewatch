@@ -1,17 +1,18 @@
 import { DatabaseSync } from 'node:sqlite';
 import type { Reading, Region } from '../shared/types.ts';
 import { nowcast } from '../shared/aqi.ts';
+import type { Scale } from '../shared/scale.ts';
 
 export type NowResponse = { ts: string | null; ageMinutes: number | null; regions: Partial<Record<Region, Record<string, number>>> };
 export type HistoryPoint = { ts: string; region: Region; value: number };
-export type Sub = { chatId: number; region: Region; notifiedLevel: number };
+export type Sub = { chatId: number; region: Region; scale: Scale; notifiedLevel: number };
 export type Store = {
   upsert(rs: Reading[]): void;
   count(): number;
   now(nowMs?: number): NowResponse;
   history(range: '24h' | '7d' | '90d', metric: string, region?: Region): HistoryPoint[];
   completeDays(metric: string): Set<string>;
-  subscribe(chatId: number, region: Region, notifiedLevel: number): void;
+  subscribe(chatId: number, region: Region, notifiedLevel: number, scale?: Scale): void;
   unsubscribe(chatId: number): void;
   setNotified(chatId: number, level: number): void;
   subscriptions(): Sub[];
@@ -35,9 +36,14 @@ export function openDb(path: string): Store {
   db.exec(`CREATE TABLE IF NOT EXISTS subscriptions (
     chat_id        INTEGER PRIMARY KEY,
     region         TEXT NOT NULL,
+    scale          TEXT NOT NULL DEFAULT 'psi',
     notified_level INTEGER NOT NULL,
     created_at     TEXT NOT NULL
   )`);
+  // Deployments created before the scale column exist as a table without it. Existing subscribers
+  // keep watching PSI, which is what their stored notified_level was measured in.
+  const cols = (db.prepare('PRAGMA table_info(subscriptions)').all() as { name: string }[]).map((c) => c.name);
+  if (!cols.includes('scale')) db.exec("ALTER TABLE subscriptions ADD COLUMN scale TEXT NOT NULL DEFAULT 'psi'");
   const ins = db.prepare(
     'INSERT INTO readings (ts, region, metric, value) VALUES (?, ?, ?, ?) ON CONFLICT(ts, region, metric) DO UPDATE SET value = excluded.value',
   );
@@ -133,11 +139,11 @@ export function openDb(path: string): Store {
         .all(metric) as { d: string }[];
       return new Set(rows.map((x) => x.d));
     },
-    subscribe(chatId, region, notifiedLevel) {
-      // Upsert leaves created_at alone.
+    subscribe(chatId, region, notifiedLevel, scale = 'psi') {
+      // Upsert leaves created_at alone, so this doubles as "change region or scale".
       db.prepare(
-        'INSERT INTO subscriptions (chat_id, region, notified_level, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(chat_id) DO UPDATE SET region = excluded.region, notified_level = excluded.notified_level',
-      ).run(chatId, region, notifiedLevel, sgtIso(Date.now()));
+        'INSERT INTO subscriptions (chat_id, region, scale, notified_level, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(chat_id) DO UPDATE SET region = excluded.region, scale = excluded.scale, notified_level = excluded.notified_level',
+      ).run(chatId, region, scale, notifiedLevel, sgtIso(Date.now()));
     },
     unsubscribe(chatId) {
       db.prepare('DELETE FROM subscriptions WHERE chat_id = ?').run(chatId);
@@ -146,7 +152,7 @@ export function openDb(path: string): Store {
       db.prepare('UPDATE subscriptions SET notified_level = ? WHERE chat_id = ?').run(level, chatId);
     },
     subscriptions() {
-      return db.prepare('SELECT chat_id AS chatId, region, notified_level AS notifiedLevel FROM subscriptions ORDER BY chat_id').all().map((x) => ({ ...x })) as Sub[]; // node:sqlite rows have a null prototype
+      return db.prepare('SELECT chat_id AS chatId, region, scale, notified_level AS notifiedLevel FROM subscriptions ORDER BY chat_id').all().map((x) => ({ ...x })) as Sub[]; // node:sqlite rows have a null prototype
     },
     subscriptionCount() {
       return (db.prepare('SELECT COUNT(*) AS n FROM subscriptions').get() as { n: number }).n;

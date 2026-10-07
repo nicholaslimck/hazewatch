@@ -22,6 +22,7 @@ export type ScaleSpec = {
   history: { metric: string; convert(v: number): number }; // series behind the 90-day calendar
   trendLines: { v: number; label: string }[]; // PM2.5 µg/m³ where a band starts, drawn on the 24-hour chart
   legend: { key: PsiBand['key']; label: string }[];
+  alertEdges: number[]; // the scale values where alert levels 1, 2, 3 start, in the scale's own units
 };
 
 const PM25_1H_NAMES = ['Normal', 'Elevated', 'High', 'Very high']; // NEA's names for PM25_1H_EDGES bands
@@ -51,6 +52,8 @@ export const SCALES: Record<Scale, ScaleSpec> = {
     verdict,
     position: (v) => bandPosition(v, PSI_EDGES), // not PSI_VERDICT_EDGES: "middle of unhealthy" means the whole band
     segments: SCALE,
+    // PSI's Unhealthy / Very unhealthy / Hazardous lower edges; the Moderate band doesn't alert.
+    alertEdges: [100, 200, 300],
     history: { metric: 'psi_twenty_four_hourly', convert: (v) => v },
     trendLines: lines(PM25_1H_EDGES, PM25_1H_NAMES),
     legend: BANDS.map((b) => ({ key: b.key, label: b.label })),
@@ -68,6 +71,10 @@ export const SCALES: Record<Scale, ScaleSpec> = {
     verdict: aqiVerdict,
     position: (v) => bandPosition(v, AQI_EDGES),
     segments: AQI_SEGMENTS,
+    // AQI's own Unhealthy / Very unhealthy / Hazardous starts. 151 is PM2.5 55.5 µg/m³, the same air
+    // as PSI 101, so the scale changes the number you read, not when you get warned. To warn from the
+    // sensitive-groups band instead, prepend 100 to this list.
+    alertEdges: [150, 200, 300],
     history: { metric: 'pm25_one_hourly', convert: pm25ToAqi },
     // Skip the Good/Moderate line (9 µg/m³ sits on the chart floor) and Hazardous (off the chart top in practice).
     trendLines: lines(AQI_PM25_EDGES, AQI_LEGEND.map((l) => l.label)).slice(1, 4),
