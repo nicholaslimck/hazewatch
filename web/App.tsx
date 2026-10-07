@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Region } from '../shared/types.ts';
 import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
+import { regionName } from '../shared/format.ts';
 import { SCALES } from '../shared/scale.ts';
 import type { Scale } from '../shared/scale.ts';
 import { getConfig, getNow, useHistory } from './api.ts';
@@ -47,7 +48,15 @@ export function App() {
   const [scale, setScale] = useState<Scale>(loadScale);
   const spec = SCALES[scale];
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
-  const [shareError, setShareError] = useState(false);
+  // One short status line under the hero (locate result, share error), cleared after a few seconds.
+  const [notice, setNotice] = useState<string | null>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  function flash(msg: string) {
+    setNotice(msg);
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice(null), 4000);
+  }
+  const [locating, setLocating] = useState(false);
   // Shared by the hero's trend sentence and the "Last 24 hours" chart, so it's fetched once.
   const pm25 = useHistory('24h', 'pm25_one_hourly', region, tick);
 
@@ -67,11 +76,24 @@ export function App() {
     try { localStorage.setItem('scale', s); } catch { /* private mode etc. */ }
   }
 
+  // The picker is only for first run (no region yet); afterwards a failed locate keeps the region and says so.
   function locate() {
-    if (!('geolocation' in navigator)) { setNeedPicker(true); return; }
+    const current = region;
+    const failed = (why: string) => {
+      setLocating(false);
+      if (current === null) setNeedPicker(true);
+      else flash(`${why} Still showing ${regionName(current)}.`);
+    };
+    if (!('geolocation' in navigator)) { failed("This browser can't share your location."); return; }
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => choose(nearestRegion(pos.coords.latitude, pos.coords.longitude)),
-      () => setNeedPicker(true),
+      (pos) => {
+        setLocating(false);
+        const r = nearestRegion(pos.coords.latitude, pos.coords.longitude);
+        flash(r === current ? `Already showing ${regionName(r)}, the nearest region.` : `Showing ${regionName(r)}, nearest to you.`);
+        choose(r);
+      },
+      (err) => failed(err.code === err.PERMISSION_DENIED ? 'Location is turned off for this site.' : "Couldn't find your location."),
       { timeout: 10_000, maximumAge: 60 * 60 * 1000 },
     );
   }
@@ -113,7 +135,6 @@ export function App() {
     return () => { live = false; };
   }, [cardKey]);
 
-  const errorTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   async function share() {
     if (cardKey === null || region === null || now?.ts == null || value === undefined) return;
     const v = Math.round(value);
@@ -121,9 +142,7 @@ export function App() {
       const file = card.current?.key === cardKey ? card.current.file : await makeCardFile({ spec, region, value: v, ts: now.ts });
       await shareFile(file, shareText(spec, region, v), publicUrl);
     } catch {
-      setShareError(true);
-      clearTimeout(errorTimer.current);
-      errorTimer.current = setTimeout(() => setShareError(false), 4000);
+      flash("Couldn't share. Try again.");
     }
   }
 
@@ -137,7 +156,7 @@ export function App() {
     <div className="page">
       <Sky
         region={region} onRegion={choose} onLocate={locate} onShare={share} view={view} onView={chooseView}
-        scale={scale} onScale={chooseScale} band={band} message={message} notice={shareError ? "Couldn't share. Try again." : null} metrics={metrics} ts={now?.ts ?? null} points={pm25}
+        scale={scale} onScale={chooseScale} band={band} message={message} notice={notice} locating={locating} metrics={metrics} ts={now?.ts ?? null} points={pm25}
       >
         {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner ts={now.ts} />}
         {needPicker && <RegionPicker onPick={choose} />}
@@ -149,7 +168,7 @@ export function App() {
             <Regions now={now} selected={region} onPick={choose} spec={spec} />
             <div className="pair">
               <Trend points={pm25} bandLines={spec.trendLines} caption={spec.trendCaption} />
-              <Calendar key={`${region}-${scale}`} region={region} tick={tick} spec={spec} />
+              <Calendar region={region} tick={tick} spec={spec} />
             </div>
           </>
         )}

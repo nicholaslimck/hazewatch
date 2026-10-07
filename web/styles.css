@@ -32,6 +32,23 @@ h2 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
 a { color: inherit; }
 select, button { font: inherit; color: inherit; }
 button { cursor: pointer; }
+
+/* Press and hover feedback, shared by every control, so a tap is acknowledged before anything else changes.
+   Transparent controls get a faint ink wash; filled ones (calendar days, map zones) darken. */
+button, .map path[role='button'] { -webkit-tap-highlight-color: transparent; transition: background-color 120ms ease, filter 120ms ease, opacity 120ms ease; }
+:is(.locate, .row, .picker-options button, .toggle button, .scale-switch button):active:not([aria-checked='true']) { background-color: color-mix(in srgb, currentColor 16%, transparent); }
+:is(button.cell, .map path[role='button']):active { filter: brightness(0.82); }
+button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { opacity: 0.8; }
+@media (hover: hover) {
+  :is(.locate, .row, .picker-options button, .toggle button, .scale-switch button):hover:not([aria-checked='true']) { background-color: color-mix(in srgb, currentColor 9%, transparent); }
+  :is(button.cell, .map path[role='button']):hover { filter: brightness(0.92); }
+}
+@media (prefers-reduced-motion: reduce) { button, .map path[role='button'] { transition: none; } }
+
+/* Locate in progress: the crosshair pulses until the browser answers. */
+.locate.locating svg { animation: locating 1s ease-in-out infinite; }
+@keyframes locating { 50% { opacity: 0.3; transform: scale(0.8); } }
+@media (prefers-reduced-motion: reduce) { .locate.locating svg { animation: none; opacity: 0.5; } }
 .muted { color: var(--muted); }
 .map { display: block; width: 100%; max-width: 420px; margin: 4px auto 16px; }
 .map path { cursor: pointer; }
@@ -152,6 +169,7 @@ button { cursor: pointer; }
   width: 100%; min-height: 44px; padding: 0; background: transparent; border: 0; text-align: left;
 }
 .row.selected { font-weight: 600; }
+.row { border-radius: 6px; }
 .track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
 .fill { display: block; height: 100%; border-radius: 4px; }
 .psi { text-align: right; }
@@ -178,6 +196,10 @@ button.cell::after { content: ''; position: absolute; inset: -2px; }
 .cell.empty { background: var(--line); }
 .cell.out { visibility: hidden; }
 .cell.today { outline: 2px solid var(--ink); outline-offset: 1px; }
+/* The tapped day: an inner ring, so it stays distinct from today's outer outline and the focus ring. */
+.cell.picked { box-shadow: inset 0 0 0 2.5px var(--bg), inset 0 0 0 4px var(--ink); }
+/* Previous grid stays up, dimmed, while a new region or scale loads. */
+section.loading .cal { opacity: 0.45; transition: opacity 150ms ease; }
 /* After .today so focus wins; thicker and further out so today + focus stays distinct. */
 .cell:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; z-index: 1; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }

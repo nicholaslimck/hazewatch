@@ -50,12 +50,12 @@ type Props = {
   region: Region | null; onRegion: (r: Region) => void; onLocate: () => void; onShare: () => void;
   view: View; onView: (v: View) => void;
   scale: Scale; onScale: (s: Scale) => void;
-  band: PsiBand | null; message: string | null; notice?: string | null;
+  band: PsiBand | null; message: string | null; notice?: string | null; locating?: boolean;
   metrics: Record<string, number> | undefined; ts: string | null; points: HistoryPoint[] | null;
   children?: ReactNode;
 };
 
-export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, metrics, ts, points, children }: Props) {
+export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, locating = false, metrics, ts, points, children }: Props) {
   useSkyTokens(band);
   const spec = SCALES[scale];
   const value = metrics === undefined ? undefined : spec.value(metrics);
@@ -82,7 +82,10 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
             </select>
             <span className="region-face" aria-hidden="true">{region ? regionName(region) : 'Choose region'} ▾</span>
           </label>
-          <button type="button" className="locate" onClick={onLocate} aria-label="Use my location" title="Use my location">
+          <button
+            type="button" className={locating ? 'locate locating' : 'locate'} onClick={onLocate}
+            aria-label={locating ? 'Finding your location' : 'Use my location'} title="Use my location" aria-busy={locating}
+          >
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="4" />
               <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
@@ -111,7 +114,8 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
           : metrics === undefined || value === undefined || ts === null ? null
           : view === 'simple' ? <HeroSimple value={value} spec={spec} ts={ts} points={points} toggle={toggle} />
           : <HeroNumbers metrics={metrics} value={value} spec={spec} ts={ts} toggle={toggle} />}
-        {notice && <p className="quiet" role="status">{notice}</p>}
+        {/* The live region stays mounted so screen readers announce each new notice. */}
+        <div role="status" aria-live="polite">{notice && <p className="quiet notice">{notice}</p>}</div>
       </div>
     </section>
   );
