@@ -1,4 +1,5 @@
 import type { Region } from '../shared/types.ts';
+import type { CardInput } from '../shared/card.ts';
 import type { Store, Sub } from './db.ts';
 import { verdict } from '../shared/verdict.ts';
 import { regionName } from '../shared/format.ts';
@@ -41,10 +42,10 @@ export function decide(sub: Sub, psi: number, nowMs: number): { message: string 
 
 export async function runAlerts(
   store: Store,
-  send: (chatId: number, text: string) => Promise<void>,
+  send: (chatId: number, text: string, card?: CardInput) => Promise<void>,
   nowMs: number,
 ): Promise<{ sent: number; dropped: number }> {
-  const regions = store.now(nowMs).regions;
+  const { ts, regions } = store.now(nowMs);
   let sent = 0;
   let dropped = 0;
   for (const sub of store.subscriptions()) {
@@ -52,8 +53,10 @@ export async function runAlerts(
     if (psi === undefined) continue;
     const d = decide(sub, psi, nowMs);
     if (d.message === null) continue;
+    // The card quotes the same rounded value the message does, so the two can't disagree.
+    const card = ts === null ? undefined : { region: sub.region, value: Math.round(psi), ts };
     try {
-      await send(sub.chatId, d.message);
+      await send(sub.chatId, d.message, card);
       store.setNotified(sub.chatId, d.notifiedLevel);
       sent++;
     } catch (e) {

@@ -15,10 +15,16 @@ const seeded = (psi = 135): Store => {
 const msg = (text: string, chat = 1): TgUpdate => ({ update_id: 1, message: { chat: { id: chat }, text } });
 const cb = (data: string, chat = 1): TgUpdate => ({ update_id: 1, callback_query: { id: 'q', data, message: { chat: { id: chat } } } });
 const run = (s: Store, u: TgUpdate, lastReply = new Map<number, number>(), nowMs = 1_000_000) => handleUpdate(u, { store: s, nowMs, lastReply });
-const text = (calls: ReturnType<typeof run>) => calls.filter((c) => c.method === 'sendMessage').map((c) => String(c.body.text)).join('\n');
+type Call = ReturnType<typeof run>[number];
+// Two shapes: a message (has a body) and a card. Narrow on method, then the fields stay typed.
+type BodyCall = Extract<Call, { body: unknown }>;
+type CardCall = Extract<Call, { method: 'sendCard' }>;
+const msgs = (calls: Call[]) => calls.filter((c) => c.method === 'sendMessage') as BodyCall[];
+const cards = (calls: Call[]) => calls.filter((c) => c.method === 'sendCard') as CardCall[];
+const text = (calls: Call[]) => msgs(calls).map((c) => String(c.body.text)).join('\n');
 
 test('/start replies with a region keyboard', () => {
-  const [c] = run(seeded(), msg('/start'));
+  const [c] = msgs(run(seeded(), msg('/start')));
   const kb = (c.body.reply_markup as { inline_keyboard: { callback_data: string; text: string }[][] }).inline_keyboard.flat();
   assert.deepEqual(kb.map((b) => b.callback_data), ['region:north', 'region:south', 'region:east', 'region:west', 'region:central', 'region:nearest']);
   assert.equal(kb[5].text, 'Use the region nearest me');
@@ -44,7 +50,7 @@ test('nowText formats reading and missing data', () => {
 
 test('region:nearest asks for location', () => {
   const calls = run(seeded(), cb('region:nearest'));
-  const kb = (calls.find((c) => c.method === 'sendMessage')!.body.reply_markup as { keyboard: { request_location?: boolean }[][] }).keyboard;
+  const kb = (msgs(calls)[0].body.reply_markup as { keyboard: { request_location?: boolean }[][] }).keyboard;
   assert.equal(kb[0][0].request_location, true);
 });
 
@@ -54,11 +60,24 @@ test('a location message subscribes to the nearest region', () => {
   assert.equal(s.subscriptions()[0].region, 'north');
 });
 
-test('/now without and with subscription', () => {
+test('/now without a subscription asks for a region', () => {
+  assert.ok(text(run(seeded(), msg('/now'))).includes('/start'));
+});
+
+test('/now with a subscription sends the card captioned with the reading', () => {
   const s = seeded();
-  assert.ok(text(run(s, msg('/now'))).includes('/start'));
   s.subscribe(1, 'central', 1);
-  assert.equal(text(run(s, msg('/now'))), nowText(s, 'central'));
+  const [call] = cards(run(s, msg('/now')));
+  assert.equal(call.text, nowText(s, 'central'));
+  assert.deepEqual(call.card, { region: 'central', value: 135, ts: TS });
+});
+
+test('/now falls back to text when there is nothing to draw', () => {
+  const s = seeded(); // only central has a reading
+  s.subscribe(1, 'east', 0);
+  const calls = run(s, msg('/now'));
+  assert.equal(cards(calls).length, 0);
+  assert.equal(text(calls), nowText(s, 'east'));
 });
 
 test('/stop removes the subscription', () => {
@@ -147,4 +166,22 @@ test('poll loop survives fetch errors', async () => {
 test('send throws SendError with status', async () => {
   const bot = createBot({ token: 't', store: seeded(), fetch: (async () => resp({}, false, 403)) as unknown as typeof fetch });
   await assert.rejects(bot.send(1, 'x'), (e: unknown) => e instanceof SendError && e.status === 403);
+});
+
+test('send posts a card as multipart sendPhoto with the reading as the caption', async () => {
+  let seen: { url: string; body: unknown } | null = null;
+  const fetchStub = (async (url: string, init?: RequestInit) => {
+    seen = { url, body: init?.body };
+    return resp({ ok: true });
+  }) as unknown as typeof fetch;
+  const bot = createBot({ token: 't', store: seeded(), fetch: fetchStub });
+  await bot.send(7, 'Central is now unhealthy (PSI 135). Skip the long run today.', { region: 'central', value: 135, ts: TS });
+  assert.ok(seen!.url.endsWith('/sendPhoto'));
+  const form = seen!.body as FormData;
+  assert.equal(form.get('chat_id'), '7');
+  assert.equal(form.get('caption'), 'Central is now unhealthy (PSI 135). Skip the long run today.');
+  const photo = form.get('photo') as File;
+  assert.equal(photo.type, 'image/png');
+  assert.equal(photo.name, 'hazewatch-central-2026-10-06.png');
+  assert.ok(photo.size > 1000, 'the card has actual bytes');
 });

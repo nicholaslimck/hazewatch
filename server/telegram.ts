@@ -4,15 +4,21 @@ import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
 import { psiBand } from '../shared/bands.ts';
 import { verdict } from '../shared/verdict.ts';
 import { fmtTime, regionName } from '../shared/format.ts';
+import { shareFilename } from '../shared/card.ts';
+import type { CardInput } from '../shared/card.ts';
 import type { Store } from './db.ts';
 import { level, SendError } from './alerts.ts';
+import { renderCard } from './card.ts';
 
 export type TgUpdate = {
   update_id: number;
   message?: { chat: { id: number }; text?: string; location?: { latitude: number; longitude: number } };
   callback_query?: { id: string; data?: string; message?: { chat: { id: number } } };
 };
-export type ApiCall = { method: 'sendMessage' | 'answerCallbackQuery'; body: Record<string, unknown> };
+// sendCard carries the card's inputs, not its bytes: handleUpdate stays pure and the poll loop renders.
+export type ApiCall =
+  | { method: 'sendMessage' | 'answerCallbackQuery'; body: Record<string, unknown> }
+  | { method: 'sendCard'; chatId: number; text: string; card: CardInput };
 
 const MAX_SUBS = 500;
 const REPLY_GAP_MS = 3000;
@@ -25,6 +31,14 @@ export function nowText(store: Store, region: Region): string {
   const psi = regions[region]?.psi_twenty_four_hourly;
   if (psi === undefined || ts === null) return `${regionName(region)} · no reading yet.`;
   return `${regionName(region)} · PSI ${Math.round(psi)}, ${psiBand(psi).label.toLowerCase()}. ${verdict(psi)[1]} Updated ${fmtTime(ts)}`;
+}
+
+// Null when there is nothing to draw yet; the card quotes the same rounded value as the message.
+export function cardInput(store: Store, region: Region): CardInput | null {
+  const { ts, regions } = store.now();
+  const psi = regions[region]?.psi_twenty_four_hourly;
+  if (ts === null || psi === undefined) return null;
+  return { region, value: Math.round(psi), ts };
 }
 
 export function handleUpdate(update: TgUpdate, ctx: { store: Store; nowMs: number; lastReply: Map<number, number> }): ApiCall[] {
@@ -84,7 +98,14 @@ export function handleUpdate(update: TgUpdate, ctx: { store: Store; nowMs: numbe
       break;
     case '/now': {
       const sub = store.subscriptions().find((s) => s.chatId === chatId);
-      say(sub ? nowText(store, sub.region) : 'Pick a region first with /start.');
+      if (!sub) {
+        say('Pick a region first with /start.');
+        break;
+      }
+      const text = nowText(store, sub.region);
+      const card = cardInput(store, sub.region);
+      if (card) out.push({ method: 'sendCard', chatId, text, card });
+      else say(text);
       break;
     }
     case '/stop':
@@ -111,6 +132,15 @@ export function createBot(o: { token: string; store: Store; fetch?: typeof fetch
     if (!res.ok) throw new SendError(res.status);
     return res;
   };
+  // Telegram takes photos as multipart, so this is the one call that bypasses api()'s JSON body.
+  const photo = async (chatId: number, text: string, card: CardInput) => {
+    const form = new FormData();
+    form.set('chat_id', String(chatId));
+    form.set('caption', text);
+    form.set('photo', new Blob([renderCard(card) as unknown as BlobPart], { type: 'image/png' }), shareFilename(card.region, card.ts));
+    const res = await f(`https://api.telegram.org/bot${o.token}/sendPhoto`, { method: 'POST', body: form });
+    if (!res.ok) throw new SendError(res.status);
+  };
   const lastReply = new Map<number, number>();
   const ctl = new AbortController();
   let offset = 0;
@@ -125,7 +155,8 @@ export function createBot(o: { token: string; store: Store; fetch?: typeof fetch
         for (const u of result) {
           offset = u.update_id + 1;
           for (const c of handleUpdate(u, { store: o.store, nowMs: Date.now(), lastReply })) {
-            await api(c.method, c.body).catch((e) => console.warn('telegram reply failed', redact(e)));
+            const call = c.method === 'sendCard' ? photo(c.chatId, c.text, c.card) : api(c.method, c.body);
+            await call.catch((e) => console.warn('telegram reply failed', redact(e)));
           }
         }
       } catch (e) {
@@ -143,7 +174,9 @@ export function createBot(o: { token: string; store: Store; fetch?: typeof fetch
     stop() {
       ctl.abort();
     },
-    async send(chatId: number, text: string) {
+    // Alerts pass the card, so the message arrives as the same image the site's share button makes.
+    async send(chatId: number, text: string, card?: CardInput) {
+      if (card) return photo(chatId, text, card);
       await api('sendMessage', { chat_id: chatId, text });
     },
   };

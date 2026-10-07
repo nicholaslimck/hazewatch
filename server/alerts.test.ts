@@ -109,3 +109,12 @@ test('runAlerts skips regions with no PSI', async () => {
   assert.deepEqual(res, { sent: 0, dropped: 0 });
   assert.equal(n, 0);
 });
+
+test('runAlerts hands the card for the same reading to the send callback', async () => {
+  const db = setup(135);
+  const cards: unknown[] = [];
+  await runAlerts(db, async (_c, _t, card) => void cards.push(card), at('12:00'));
+  // Same rounded value the message quotes, and the ts the reading came from, so the image can't
+  // disagree with the caption.
+  assert.deepEqual(cards, [{ region: 'central', value: 135, ts: '2026-10-06T12:00:00+08:00' }]);
+});
