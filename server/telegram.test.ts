@@ -255,3 +255,25 @@ test('send posts a card as multipart sendPhoto with the reading as the caption',
   assert.equal(photo.name, 'hazewatch-central-2026-10-06.png');
   assert.ok(photo.size > 1000, 'the card has actual bytes');
 });
+
+test('start registers the command menu Telegram shows on "/"', async () => {
+  const sends: { url: string; body: unknown }[] = [];
+  const fetchStub = (async (url: string, init?: RequestInit) => {
+    if (url.endsWith('/getUpdates')) return never(init?.signal);
+    sends.push({ url, body: JSON.parse(String(init?.body)) });
+    return resp({ ok: true });
+  }) as unknown as typeof fetch;
+  const bot = createBot({ token: 't', store: seeded(), fetch: fetchStub });
+  bot.start();
+  for (let i = 0; i < 20 && !sends.some((s) => s.url.endsWith('/setMyCommands')); i++) await new Promise((r) => setTimeout(r, 1));
+  bot.stop();
+  const call = sends.find((s) => s.url.endsWith('/setMyCommands'));
+  assert.ok(call, 'setMyCommands was never called, so "/" would show no menu');
+  const commands = (call.body as { commands: { command: string; description: string }[] }).commands;
+  assert.deepEqual(commands.map((c) => c.command), ['start', 'now', 'scale', 'region', 'stop']);
+  // Documented BotCommand limits: command 1-32 chars of lowercase letters/digits/underscores,
+  // description 1-256 chars. Telegram rejects the whole call if any entry breaks them.
+  assert.ok(commands.every((c) => /^[a-z0-9_]{1,32}$/.test(c.command)), 'command name would be rejected');
+  assert.ok(commands.every((c) => c.description.length >= 1 && c.description.length <= 256), 'description out of range');
+  assert.ok(commands.length <= 100, 'Telegram accepts at most 100 commands');
+});

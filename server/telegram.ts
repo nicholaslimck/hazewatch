@@ -25,6 +25,14 @@ const REPLY_GAP_MS = 3000;
 const BACKOFF = [5000, 30000, 60000];
 const HELP = 'Send /start or /region to pick a region, /scale to switch between PSI and AQI, /now for the current reading, or /stop to unsubscribe.';
 const FULL = 'HazeWatch is full right now. Try again later.';
+// What Telegram shows when someone types "/". Keep in step with the switch in handleUpdate.
+const COMMANDS = [
+  { command: 'start', description: 'Pick the region to watch' },
+  { command: 'now', description: 'Current reading, as a share card' },
+  { command: 'scale', description: 'Switch between PSI and AQI' },
+  { command: 'region', description: 'Change the region you watch' },
+  { command: 'stop', description: 'Stop the alerts' },
+];
 const SCALE_KEYBOARD = { inline_keyboard: [[SCALES.psi, SCALES.aqi].map((s) => ({ text: s.name, callback_data: `scale:${s.name.toLowerCase()}` }))] };
 
 export function nowText(store: Store, region: Region, spec: ScaleSpec): string {
@@ -187,8 +195,13 @@ export function createBot(o: { token: string; store: Store; fetch?: typeof fetch
     }
   }
 
+  // Telegram shows a '/' menu only for commands registered here. Re-registering on every start is
+  // idempotent and repairs a list that was cleared, so it needs no state of its own.
+  const registerCommands = () => api('setMyCommands', { commands: COMMANDS });
+
   return {
     start() {
+      registerCommands().catch((e) => console.warn('telegram command registration failed', redact(e)));
       loop().catch((e) => console.warn('telegram loop crashed', redact(e)));
     },
     stop() {
