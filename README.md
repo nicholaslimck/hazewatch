@@ -29,7 +29,6 @@ All settings are environment variables. Set them in your shell or in a `.env` fi
 | `DATA_GOV_SG_API_KEY` | Optional. Raises your data.gov.sg rate limit. The app works without it. |
 | `TELEGRAM_BOT_TOKEN` | Enables the Telegram bot. Without it the bot stays off. |
 | `PUBLIC_URL` | The address the app is served from, for example `https://haze.example.com`. Exposed at `GET /api/config` as `{ "publicUrl": ... }` (`null` when unset) and used as the link on the share card. |
-| `NODE_EXTRA_CA_CERTS` | Path to an extra root certificate. See [Corporate proxy](#corporate-proxy). |
 | `PORT`, `DB_PATH` | Server port (default `8080`) and SQLite path (default `./data/aq.db`). |
 
 ## Telegram alerts
@@ -41,10 +40,6 @@ The bot messages people when their region's 24h PSI turns unhealthy, changes ban
 3. Restart. Message the bot `/start` (or `/region` to change it), pick a region, then try `/now`. `/stop` unsubscribes.
 
 The bot is open to anyone who finds it. Limits: 500 subscribers, one reply per chat every 3 seconds, and it never echoes what people type.
-
-## Corporate proxy
-
-Behind a proxy that re-signs TLS, Node won't trust the proxy's certificate. Mount the root certificate and point Node at it: uncomment the volume line in `compose.yaml` and set `NODE_EXTRA_CA_CERTS=/certs/corp-root.pem`.
 
 ## Local development
 
