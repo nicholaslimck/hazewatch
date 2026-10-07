@@ -1,6 +1,14 @@
-# SG Air Quality Monitor
+# HazeWatch
 
-A self-hosted dashboard for Singapore's air quality. It pulls PSI and PM2.5 readings for the five regions from NEA, stores them in SQLite, and serves a small web page with the current values and history. A toggle switches between NEA's PSI and an AQI (US EPA scale) that the app calculates itself from the hourly PM2.5 using the EPA NowCast (not an official reading).
+A self-hosted dashboard for Singapore's air quality. It pulls PSI and PM2.5 readings for the five regions from NEA, stores them in SQLite, and serves a small web app with current values and history.
+
+## Features
+
+- Current reading for the five NEA regions, on a region map or a picker, with a plain-language verdict.
+- A toggle between NEA's PSI and an AQI (US EPA scale). The AQI is calculated by the app from hourly PM2.5 using the EPA NowCast. It is not an official reading.
+- A 24-hour trend and a calendar of daily history.
+- A share card, and a home-screen install (PWA).
+- Optional Telegram alerts when your region's air turns unhealthy.
 
 ## Quick start
 
@@ -12,25 +20,31 @@ Then open http://localhost:8080.
 
 The first start backfills about 90 days of history, which takes a few minutes. Data is kept in the `aq-data` Docker volume, so restarts skip days already stored.
 
-## API key (optional)
+## Configuration
 
-The app works without a key. If you hit data.gov.sg rate limits, set `DATA_GOV_SG_API_KEY` in your shell or in a `.env` file next to `compose.yaml`. Compose passes it through.
+All settings are environment variables. Set them in your shell or in a `.env` file next to `compose.yaml`; Compose passes them through.
+
+| Variable | Purpose |
+| --- | --- |
+| `DATA_GOV_SG_API_KEY` | Optional. Raises your data.gov.sg rate limit. The app works without it. |
+| `TELEGRAM_BOT_TOKEN` | Enables the Telegram bot. Without it the bot stays off. |
+| `PUBLIC_URL` | The address the app is served from, for example `https://haze.example.com`. Exposed at `GET /api/config` as `{ "publicUrl": ... }` (`null` when unset) and used as the link on the share card. |
+| `NODE_EXTRA_CA_CERTS` | Path to an extra root certificate. See [Corporate proxy](#corporate-proxy). |
+| `PORT`, `DB_PATH` | Server port (default `8080`) and SQLite path (default `./data/aq.db`). |
 
 ## Telegram alerts
 
-Optional. The bot messages people when their region's 24h PSI turns unhealthy, changes band or clears, and never between 11pm and 7am SGT.
+The bot messages people when their region's 24h PSI turns unhealthy, changes band or clears, and never between 11pm and 7am SGT.
 
 1. Message @BotFather, send `/newbot`, and pick a name and username (suggested: `@HazeWatchSG_bot`).
-2. Set `TELEGRAM_BOT_TOKEN` to the token it gives you, in your shell or `.env`. Without it the bot stays off.
+2. Set `TELEGRAM_BOT_TOKEN` to the token it gives you.
 3. Restart. Message the bot `/start` (or `/region` to change it), pick a region, then try `/now`. `/stop` unsubscribes.
 
 The bot is open to anyone who finds it. Limits: 500 subscribers, one reply per chat every 3 seconds, and it never echoes what people type.
 
-Behind a corporate proxy that re-signs TLS, Node won't trust the proxy's certificate. Mount the root certificate and point Node at it: uncomment the volume line in `compose.yaml` and set `NODE_EXTRA_CA_CERTS=/certs/corp-root.pem`.
+## Corporate proxy
 
-## Public URL (optional)
-
-Set `PUBLIC_URL` to the address the app is served from (for example `https://haze.example.com`). It is exposed at `GET /api/config` as `{ "publicUrl": ... }`, and is `null` when unset. The web app adds it as the link when sharing the card.
+Behind a proxy that re-signs TLS, Node won't trust the proxy's certificate. Mount the root certificate and point Node at it: uncomment the volume line in `compose.yaml` and set `NODE_EXTRA_CA_CERTS=/certs/corp-root.pem`.
 
 ## Local development
 
@@ -41,15 +55,20 @@ bun install
 bun run dev:server   # API on :8080
 bun run dev:web      # Vite dev server, proxies /api to :8080
 bun run test
+bun run typecheck
+bun run build        # production web build into dist/
 ```
+
+Layout: `server/` (Hono API, NEA ingest, SQLite, Telegram bot), `web/` (React app), `shared/` (code used by both, such as bands and AQI maths), `scripts/` (map geometry build).
 
 ## Data
 
-Data: NEA via [data.gov.sg](https://data.gov.sg).
+Readings come from NEA via [data.gov.sg](https://data.gov.sg).
 
-## Not in v1
+## Not built
 
-- Region detail view: tap a region to see its full per-pollutant breakdown. The data is already stored, so this is UI-only work.
-- A small region map in place of the bar list.
-- Forecasts, push or email alerts, and user accounts.
-- WAQI or other data sources.
+Forecasts, email or push alerts, user accounts, and other data sources such as WAQI.
+
+## License
+
+See [LICENSE](LICENSE).
