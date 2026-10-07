@@ -69,6 +69,10 @@ Readings come from NEA via [data.gov.sg](https://data.gov.sg).
 
 Forecasts, email or push alerts, user accounts, and other data sources such as WAQI.
 
+## AI usage
+
+This project was built with Claude Code. Claude helped write the design specs, the implementation plans, and the code and tests. The app itself makes no AI calls at runtime.
+
 ## License
 
 See [LICENSE](LICENSE).
