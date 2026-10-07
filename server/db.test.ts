@@ -114,3 +114,14 @@ test('subscriptionCount', () => {
   db.subscribe(2, 'east', 0);
   assert.equal(db.subscriptionCount(), 2);
 });
+
+test('repeated now() calls update ageMinutes without losing data', () => {
+  const db = openDb(':memory:');
+  db.upsert([r(hour('2026-10-05', 20), 1)]);
+  const a = db.now(Date.parse('2026-10-05T21:00:00+08:00'));
+  const b = db.now(Date.parse('2026-10-05T22:30:00+08:00'));
+  assert.equal(a.ageMinutes, 60);
+  assert.equal(b.ageMinutes, 150); // still live after the first call cached the payload
+  assert.equal(a.ts, b.ts);
+  assert.deepEqual(a.regions, b.regions);
+});

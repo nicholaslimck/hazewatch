@@ -42,8 +42,48 @@ export function openDb(path: string): Store {
     'INSERT INTO readings (ts, region, metric, value) VALUES (?, ?, ?, ?) ON CONFLICT(ts, region, metric) DO UPDATE SET value = excluded.value',
   );
 
+  // ponytail: single-process, single-writer cache. If a second process ever
+  // writes readings, invalidate via a version column instead.
+  let nowCache: { ts: string | null; regions: NowResponse['regions'] } | null = null;
+
+  // The now() payload only changes when readings change, so compute it once and
+  // reuse it until the next upsert.
+  const computeNow = (): { ts: string | null; regions: NowResponse['regions'] } => {
+    const top = db.prepare('SELECT MAX(ts) AS ts FROM readings').get() as { ts: string | null };
+    if (!top.ts) return { ts: null, regions: {} };
+    const rows = db
+      .prepare(
+        // Bare column with MAX() takes the value from the max row; the 7-day bound avoids a full scan.
+        `SELECT region, metric, value, MAX(ts) AS ts FROM readings WHERE ts >= ? GROUP BY region, metric`,
+      )
+      .all(sgtIso(Date.parse(top.ts) - 7 * 24 * HOUR)) as { region: Region; metric: string; value: number }[];
+    const regions: NowResponse['regions'] = {};
+    for (const x of rows) (regions[x.region] ??= {})[x.metric] = x.value;
+
+    // pm25_nowcast (µg/m³): EPA NowCast over the last 12 hours of hourly PM2.5, counted back from the newest hour in the db.
+    const newestPm = (db.prepare("SELECT MAX(ts) AS ts FROM readings WHERE metric = 'pm25_one_hourly'").get() as { ts: string | null }).ts;
+    if (newestPm) {
+      const newestMs = Date.parse(newestPm);
+      const hourly = db
+        .prepare("SELECT region, ts, value FROM readings WHERE metric = 'pm25_one_hourly' AND ts > ?")
+        .all(sgtIso(newestMs - 12 * HOUR)) as { region: Region; ts: string; value: number }[];
+      const byRegion = new Map<Region, (number | undefined)[]>();
+      for (const p of hourly) {
+        const hours = byRegion.get(p.region) ?? [];
+        hours[Math.round((newestMs - Date.parse(p.ts)) / HOUR)] = p.value;
+        byRegion.set(p.region, hours);
+      }
+      for (const [region, hours] of byRegion) {
+        const nc = nowcast(hours);
+        if (nc !== null) (regions[region] ??= {}).pm25_nowcast = Math.floor(nc * 10 + 1e-6) / 10; // EPA truncates to 0.1
+      }
+    }
+    return { ts: top.ts, regions };
+  };
+
   return {
     upsert(rs) {
+      nowCache = null; // single writer; a rolled-back batch just recomputes once
       db.exec('BEGIN');
       try {
         for (const x of rs) ins.run(x.ts, x.region, x.metric, x.value);
@@ -57,36 +97,13 @@ export function openDb(path: string): Store {
       return (db.prepare('SELECT COUNT(*) AS n FROM readings').get() as { n: number }).n;
     },
     now(nowMs = Date.now()) {
-      const top = db.prepare('SELECT MAX(ts) AS ts FROM readings').get() as { ts: string | null };
-      if (!top.ts) return { ts: null, ageMinutes: null, regions: {} };
-      const rows = db
-        .prepare(
-          // Bare column with MAX() takes the value from the max row; the 7-day bound avoids a full scan.
-          `SELECT region, metric, value, MAX(ts) AS ts FROM readings WHERE ts >= ? GROUP BY region, metric`,
-        )
-        .all(sgtIso(Date.parse(top.ts) - 7 * 24 * HOUR)) as { region: Region; metric: string; value: number }[];
-      const regions: NowResponse['regions'] = {};
-      for (const x of rows) (regions[x.region] ??= {})[x.metric] = x.value;
-
-      // pm25_nowcast (µg/m³): EPA NowCast over the last 12 hours of hourly PM2.5, counted back from the newest hour in the db.
-      const newestPm = (db.prepare("SELECT MAX(ts) AS ts FROM readings WHERE metric = 'pm25_one_hourly'").get() as { ts: string | null }).ts;
-      if (newestPm) {
-        const newestMs = Date.parse(newestPm);
-        const hourly = db
-          .prepare("SELECT region, ts, value FROM readings WHERE metric = 'pm25_one_hourly' AND ts > ?")
-          .all(sgtIso(newestMs - 12 * HOUR)) as { region: Region; ts: string; value: number }[];
-        const byRegion = new Map<Region, (number | undefined)[]>();
-        for (const p of hourly) {
-          const hours = byRegion.get(p.region) ?? [];
-          hours[Math.round((newestMs - Date.parse(p.ts)) / HOUR)] = p.value;
-          byRegion.set(p.region, hours);
-        }
-        for (const [region, hours] of byRegion) {
-          const nc = nowcast(hours);
-          if (nc !== null) (regions[region] ??= {}).pm25_nowcast = Math.floor(nc * 10 + 1e-6) / 10; // EPA truncates to 0.1
-        }
-      }
-      return { ts: top.ts, ageMinutes: Math.round((nowMs - Date.parse(top.ts)) / 60000), regions };
+      const c = (nowCache ??= computeNow());
+      return {
+        ts: c.ts,
+        // ageMinutes depends on wall-clock, not stored data, so it stays live.
+        ageMinutes: c.ts ? Math.round((nowMs - Date.parse(c.ts)) / 60000) : null,
+        regions: c.regions,
+      };
     },
     history(range, metric, region) {
       const newest = (db.prepare('SELECT MAX(ts) AS ts FROM readings WHERE metric = ?').get(metric) as { ts: string | null }).ts;
