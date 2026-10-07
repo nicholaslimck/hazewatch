@@ -106,7 +106,7 @@ test('backfill refetches a past day that is missing hours (server was down)', as
     store.upsert(fullDay('2026-10-05', m).slice(0, 19)); // 19:00–23:00 never ingested
   }
   const calls: string[] = [];
-  const f: Fetcher = async (e, d) => { calls.push(`${e}:${d}`); return fullDay(d, metricOf(e)); };
+  const f: Fetcher = async (e, d) => { calls.push(`${e}:${d}`); return fullDay(d!, metricOf(e)); };
   await backfill(store, f, { days: 3, todaySgt: '2026-10-06', sleepMs: 0 });
   assert.deepEqual(calls, ['psi:2026-10-05', 'pm25:2026-10-05', 'psi:2026-10-06', 'pm25:2026-10-06']);
   assert.equal(store.history('7d', 'pm25_one_hourly', 'north').filter((p) => p.ts.startsWith('2026-10-05')).length, 24);
