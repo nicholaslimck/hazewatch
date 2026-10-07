@@ -16,7 +16,7 @@ A self-hosted dashboard for Singapore's air quality. It pulls PSI and PM2.5 read
 docker compose up -d
 ```
 
-Then open http://localhost:8080.
+Compose pulls `ghcr.io/nicholaslimck/hazewatch:latest`, which GitHub Actions builds from `main` for amd64 and arm64. To pin a release, change the tag in `compose.yaml` to a version such as `:1.2.0`. Then open http://localhost:8080.
 
 The first start backfills about 90 days of history, which takes a few minutes. Data is kept in the `aq-data` Docker volume, so restarts skip days already stored.
 
@@ -52,6 +52,7 @@ bun run dev:web      # Vite dev server, proxies /api to :8080
 bun run test
 bun run typecheck
 bun run build        # production web build into dist/
+docker build -t hazewatch .   # build the image locally
 ```
 
 Layout: `server/` (Hono API, NEA ingest, SQLite, Telegram bot), `web/` (React app), `shared/` (code used by both, such as bands and AQI maths), `scripts/` (map geometry build).
