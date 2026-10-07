@@ -5,6 +5,9 @@ import { ingestOnce, backfill, sgtDate, msUntilNext50, type Fetcher, type Ingest
 import type { Reading } from '../shared/types.ts';
 
 const r = (ts: string, metric: string, value = 1): Reading => ({ ts, region: 'north', metric, value });
+// A day counts as stored only when all 24 hours are there.
+const fullDay = (d: string, metric: string) => Array.from({ length: 24 }, (_, h) => r(`${d}T${String(h).padStart(2, '0')}:00:00+08:00`, metric));
+
 const fresh = (): IngestState => ({ lastIngestAt: null, lastError: null });
 const quiet = () => {
   const w = console.warn, l = console.log;
@@ -53,7 +56,7 @@ test('ingestOnce partial failure', async () => {
 
 test('backfill skips existing days', async () => {
   const store = openDb(':memory:');
-  store.upsert([r('2026-10-05T12:00:00+08:00', 'pm25_one_hourly'), r('2026-10-05T12:00:00+08:00', 'psi_twenty_four_hourly')]);
+  store.upsert([...fullDay('2026-10-05', 'pm25_one_hourly'), ...fullDay('2026-10-05', 'psi_twenty_four_hourly')]);
   const calls: string[] = [];
   const f: Fetcher = async (e, d) => { calls.push(`${e}:${d}`); return [r(`${d}T12:00:00+08:00`, 'pm25_one_hourly')]; };
   const n = await backfill(store, f, { days: 3, todaySgt: '2026-10-06', sleepMs: 0 });
@@ -71,14 +74,14 @@ test('backfill continues past a failing day', async () => {
   let n: number;
   try { n = await backfill(store, f, { days: 3, todaySgt: '2026-10-06', sleepMs: 0 }); } finally { restore(); }
   assert.equal(n, 2);
-  assert.equal(store.daysWithData().has('2026-10-06'), true);
+  assert.equal(store.history('7d', 'pm25_one_hourly').some((p) => p.ts.startsWith('2026-10-06')), true);
 });
 
 const metricOf = (e: string) => (e === 'psi' ? 'psi_twenty_four_hourly' : 'pm25_one_hourly');
 
 test('backfill fetches the missing metric only', async () => {
   const store = openDb(':memory:');
-  store.upsert([r('2026-10-05T12:00:00+08:00', 'pm25_one_hourly')]);
+  store.upsert(fullDay('2026-10-05', 'pm25_one_hourly'));
   const calls: string[] = [];
   const f: Fetcher = async (e, d) => { calls.push(`${e}:${d}`); return [r(`${d}T12:00:00+08:00`, metricOf(e))]; };
   await backfill(store, f, { days: 2, todaySgt: '2026-10-06', sleepMs: 0 });
@@ -94,6 +97,19 @@ test('backfill always refetches today for both endpoints', async () => {
   const n = await backfill(store, f, { days: 1, todaySgt: '2026-10-06', sleepMs: 0 });
   assert.deepEqual(calls, ['psi:2026-10-06', 'pm25:2026-10-06']);
   assert.equal(n, 1);
+});
+
+test('backfill refetches a past day that is missing hours (server was down)', async () => {
+  const store = openDb(':memory:');
+  for (const m of ['pm25_one_hourly', 'psi_twenty_four_hourly']) {
+    store.upsert(fullDay('2026-10-04', m));
+    store.upsert(fullDay('2026-10-05', m).slice(0, 19)); // 19:00–23:00 never ingested
+  }
+  const calls: string[] = [];
+  const f: Fetcher = async (e, d) => { calls.push(`${e}:${d}`); return fullDay(d, metricOf(e)); };
+  await backfill(store, f, { days: 3, todaySgt: '2026-10-06', sleepMs: 0 });
+  assert.deepEqual(calls, ['psi:2026-10-05', 'pm25:2026-10-05', 'psi:2026-10-06', 'pm25:2026-10-06']);
+  assert.equal(store.history('7d', 'pm25_one_hourly', 'north').filter((p) => p.ts.startsWith('2026-10-05')).length, 24);
 });
 
 test('sgtDate', () => {

@@ -45,7 +45,7 @@ export async function backfill(
   fetcher: Fetcher,
   opts: { days: number; todaySgt: string; sleepMs: number },
 ): Promise<number> {
-  const have = { psi: store.daysWithData('psi_twenty_four_hourly'), pm25: store.daysWithData('pm25_one_hourly') };
+  const have = { psi: store.completeDays('psi_twenty_four_hourly'), pm25: store.completeDays('pm25_one_hourly') };
   const end = Date.parse(`${opts.todaySgt}T00:00:00Z`);
   let fetched = 0;
   for (let i = opts.days - 1; i >= 0; i--) {

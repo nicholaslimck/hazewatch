@@ -81,18 +81,14 @@ test('history 90d keeps one decimal in daily means', () => {
   assert.equal(db.history('90d', 'pm25_one_hourly')[0].value, 9.7);
 });
 
-test('daysWithData', () => {
+test('completeDays counts only days with all 24 hours, per metric', () => {
   const db = openDb(':memory:');
-  db.upsert([r(hour('2026-10-04', 1), 1), r(hour('2026-10-05', 1), 1), r(hour('2026-10-05', 2), 1)]);
-  assert.deepEqual(db.daysWithData(), new Set(['2026-10-04', '2026-10-05']));
-});
-
-test('daysWithData filters by metric', () => {
-  const db = openDb(':memory:');
-  db.upsert([r(hour('2026-10-04', 1), 1), r(hour('2026-10-05', 1), 1, 'pm25_one_hourly')]);
-  assert.deepEqual(db.daysWithData('psi_twenty_four_hourly'), new Set(['2026-10-04']));
-  assert.deepEqual(db.daysWithData('pm25_one_hourly'), new Set(['2026-10-05']));
-  assert.deepEqual(db.daysWithData('nope'), new Set());
+  const day = (d: string, n: number, metric?: string) => Array.from({ length: n }, (_, h) => r(hour(d, h), 1, metric));
+  db.upsert([...day('2026-10-04', 24), ...day('2026-10-05', 23), ...day('2026-10-05', 24, 'pm25_one_hourly')]);
+  db.upsert([r(hour('2026-10-04', 5), 1, 'pm25_one_hourly', 'north')]); // other regions don't add hours
+  assert.deepEqual(db.completeDays('psi_twenty_four_hourly'), new Set(['2026-10-04']));
+  assert.deepEqual(db.completeDays('pm25_one_hourly'), new Set(['2026-10-05']));
+  assert.deepEqual(db.completeDays('nope'), new Set());
 });
 
 test('subscribe upserts and keeps one row per chat', () => {

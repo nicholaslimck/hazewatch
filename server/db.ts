@@ -10,7 +10,7 @@ export type Store = {
   count(): number;
   now(nowMs?: number): NowResponse;
   history(range: '24h' | '7d' | '90d', metric: string, region?: Region): HistoryPoint[];
-  daysWithData(metric?: string): Set<string>;
+  completeDays(metric: string): Set<string>;
   subscribe(chatId: number, region: Region, notifiedLevel: number): void;
   unsubscribe(chatId: number): void;
   setNotified(chatId: number, level: number): void;
@@ -109,10 +109,11 @@ export function openDb(path: string): Store {
         .prepare(`SELECT ts, region, value FROM readings WHERE metric = ?${regionSql} AND ts > ? ORDER BY ts, region`)
         .all(...args, cutoff) as HistoryPoint[];
     },
-    daysWithData(metric) {
-      const rows = (metric
-        ? db.prepare('SELECT DISTINCT substr(ts,1,10) AS d FROM readings WHERE metric = ?').all(metric)
-        : db.prepare('SELECT DISTINCT substr(ts,1,10) AS d FROM readings').all()) as { d: string }[];
+    completeDays(metric) {
+      // All 24 hourly readings present. A partial day (server down for some hours) isn't complete, so backfill refetches it.
+      const rows = db
+        .prepare('SELECT substr(ts,1,10) AS d FROM readings WHERE metric = ? GROUP BY d HAVING COUNT(DISTINCT ts) >= 24')
+        .all(metric) as { d: string }[];
       return new Set(rows.map((x) => x.d));
     },
     subscribe(chatId, region, notifiedLevel) {
