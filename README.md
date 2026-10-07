@@ -1,6 +1,18 @@
-# HazeWatch
+<p align="center">
+  <img src="docs/icon.svg" alt="HazeWatch logo" width="120" />
+</p>
+<h1 align="center">HazeWatch</h1>
+
+<p align="center">
+  <a href="https://github.com/nicholaslimck/hazewatch/actions/workflows/docker.yml"><img src="https://github.com/nicholaslimck/hazewatch/actions/workflows/docker.yml/badge.svg" alt="docker workflow"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/nicholaslimck/hazewatch" alt="license: MIT"></a>
+</p>
 
 A self-hosted dashboard for Singapore's air quality. It pulls PSI and PM2.5 readings for the five regions from NEA, stores them in SQLite, and serves a small web app with current values and history.
+
+<p align="center">
+  <img src="docs/screenshot-desktop.png" alt="HazeWatch desktop dashboard" width="800" />
+</p>
 
 ## Features
 
@@ -60,7 +72,7 @@ Layout: `server/` (Hono API, NEA ingest, SQLite, Telegram bot), `web/` (React ap
 
 ## Data
 
-Readings come from NEA via [data.gov.sg](https://data.gov.sg).
+Readings come from NEA via [data.gov.sg](https://data.gov.sg). The server refetches both endpoints hourly at :50, and nothing is pruned — history only grows, in the `aq-data` volume.
 
 ## Not built
 
