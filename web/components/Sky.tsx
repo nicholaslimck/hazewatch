@@ -36,13 +36,18 @@ function useSkyTokens(band: PsiBand | null) {
       s.setProperty(`--bar-${b.key}`, dark ? b.darkBar : b.bar);
       s.setProperty(`--cell-${b.key}`, dark ? b.darkBar : b.bar);
     }
-    if (band) {
-      s.setProperty('--sky', dark ? band.darkColor : band.color);
+    const top = band ? (dark ? band.darkColor : band.color) : null;
+    if (band && top !== null) {
+      s.setProperty('--sky', top);
       s.setProperty('--sky-ink', dark ? band.darkOnColor : band.onColor);
     } else {
       s.removeProperty('--sky'); // falls back to the neutral defaults in styles.css
       s.removeProperty('--sky-ink');
     }
+    // The Android status bar takes its colour from theme-color, so keep it on the surface under it
+    // (the neutral --line default from styles.css when no band is known yet).
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', top ?? getComputedStyle(document.documentElement).getPropertyValue('--line').trim());
   }, [band, dark]);
 }
 
