@@ -16,7 +16,6 @@ import { RegionPicker } from './components/RegionPicker.tsx';
 import { makeCardFile, shareFile, shareText } from './share.ts';
 
 const REFRESH_MS = 10 * 60 * 1000;
-const SENSITIVE = ' Elderly, children, pregnant women and people with heart or lung conditions should take extra care.';
 
 // Official explainer pages, checked 2026-10-06.
 const EXPLAINERS = [
@@ -173,7 +172,7 @@ export function App() {
           </>
         )}
         <footer className="footer">
-          {band && <p>{spec.source} advice: {band.advice}.{band.sensitiveNote && SENSITIVE}</p>}
+          {/* The band's advisory now renders in the sky, beside the reading it explains. */}
           {scale === 'aqi' && (
             <p>
               AQI here is the US EPA index, worked out from NEA's hourly PM2.5 using NowCast, a weighted average of the last 12 hours.

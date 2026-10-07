@@ -83,7 +83,9 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 }
 @media (prefers-reduced-motion: reduce) { .sky { transition: none; } }
 .sky-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.sky-body { margin-top: auto; }
+/* The band's advisory sits under the reading it explains. No auto margin on the body: the sky's
+   remaining height falls below the content, not above it, so the verdict is not pushed down. */
+.sky-advice { margin-top: 20px; max-width: 68ch; font-size: 14px; line-height: 1.45; }
 .where { display: flex; align-items: center; gap: 4px; }
 .region { position: relative; display: inline-flex; align-items: center; }
 /* Visible face hugs the name; the native select sits invisibly on top so the picker still works. */

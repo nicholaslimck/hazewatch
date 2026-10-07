@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { REGIONS } from '../../shared/types.ts';
 import type { Region } from '../../shared/types.ts';
-import { PALETTES } from '../../shared/bands.ts';
+import { PALETTES, SENSITIVE_NOTE } from '../../shared/bands.ts';
 import type { PsiBand } from '../../shared/bands.ts';
 import { parseSavedRegion } from '../../shared/regions.ts';
 import { SCALES } from '../../shared/scale.ts';
@@ -64,6 +64,9 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
   useSkyTokens(band);
   const spec = SCALES[scale];
   const value = metrics === undefined ? undefined : spec.value(metrics);
+  // The band's advisory, sitting under the reading it explains. Bands with no advice of their own
+  // (AQI's Very unhealthy) would otherwise render a bare "advice: ." clause, so skip that part.
+  const advice = band && [band.advice && `${spec.source} advice: ${band.advice}.`, band.sensitiveNote && SENSITIVE_NOTE].filter(Boolean).join(' ');
   // Stands in for the scale's name on the hero's meta line, so it sits on the number it changes.
   // Kept on screen when this scale has no reading so the user can switch back.
   const toggle = (
@@ -121,6 +124,7 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
           : <HeroNumbers metrics={metrics} value={value} spec={spec} ts={ts} toggle={toggle} />}
         {/* The live region stays mounted so screen readers announce each new notice. */}
         <div role="status" aria-live="polite">{notice && <p className="quiet notice">{notice}</p>}</div>
+        {advice && <p className="sky-advice">{advice}</p>}
       </div>
     </section>
   );

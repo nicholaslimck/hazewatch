@@ -26,6 +26,10 @@ export const SEVERE: PsiBand = { key: 'severe', label: 'Very unhealthy', advice:
 // Every palette that needs CSS tokens (--bar-*, --cell-*).
 export const PALETTES: readonly PsiBand[] = [...BANDS, SEVERE];
 
+// Appended to a band's advice when sensitiveNote is set. Lives with the band data so the sky can
+// quote it beside the reading (it used to sit in App.tsx and render only in the footer).
+export const SENSITIVE_NOTE = 'Elderly, children, pregnant women and people with heart or lung conditions should take extra care.';
+
 // Band edges: the top of each band but the last (which is open-ended). Every threshold in the app derives from these.
 export const PSI_EDGES = [50, 100, 200, 300];
 export const PM25_1H_EDGES = [55, 150, 250]; // NEA's 1-hour PM2.5 bands: Normal, Elevated, High, Very high
