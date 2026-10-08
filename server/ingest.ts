@@ -16,10 +16,15 @@ const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 /** YYYY-MM-DD in UTC+8 (SGT has no DST). */
 export const sgtDate = (ms: number): string => new Date(ms + 8 * HOUR).toISOString().slice(0, 10);
 
-/** Ms until the next :50 past the hour; always in (0, 3_600_000]. */
-export function msUntilNext50(nowMs: number): number {
-  const d = 50 * 60_000 - (nowMs % HOUR);
-  return d > 0 ? d : d + HOUR;
+/** How often to poll NEA. NEA publishes each hour's reading ~15 min past the hour; the old hourly
+ *  poll at :50 left the app sitting on the previous hour's reading for up to ~35 min of every hour. */
+export const POLL_MINUTES = 15;
+
+/** Ms until the next poll slot — quarter-hourly on the wall clock (:00 :15 :30 :45); in (0, interval]. */
+export function msUntilNextSlot(nowMs: number, everyMinutes: number = POLL_MINUTES): number {
+  const interval = everyMinutes * 60_000;
+  const d = interval - (nowMs % interval);
+  return d > 0 ? d : d + interval;
 }
 
 export async function ingestOnce(store: Store, fetcher: Fetcher, state: IngestState): Promise<void> {
@@ -50,7 +55,7 @@ export async function backfill(
   let fetched = 0;
   for (let i = opts.days - 1; i >= 0; i--) {
     const date = new Date(end - i * 24 * HOUR).toISOString().slice(0, 10);
-    // Today is always refetched: hourly ingest may have stored only the latest hours.
+    // Today is always refetched: the scheduled ingest may have stored only the latest hours.
     const todo = ENDPOINTS.filter((e) => date === opts.todaySgt || !have[e].has(date));
     if (!todo.length) continue;
     let ok = false, rows = 0;
