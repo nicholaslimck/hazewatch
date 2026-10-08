@@ -3,8 +3,10 @@
   --ink: #1B2226;
   --muted: #5E6A71;
   --line: #DDE3E6;
-  /* Neutral sky until a band is known; App sets --sky, --sky-ink, --bar-*, --cell-* inline. */
-  --sky: var(--line);
+  /* Sky before a band is known. A neutral clearly darker than the "Good" band, so "no reading yet"
+     never reads as "the air is fine" — lightness alone separates them, colour vision aside.
+     App sets --sky, --sky-ink, --bar-*, --cell-* inline once a band is known. */
+  --sky: #AFB9BF;
   --sky-ink: var(--ink);
   font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
@@ -21,6 +23,7 @@
     --ink: #E6EBEE;
     --muted: #8E9AA1;
     --line: #2A3136;
+    --sky: #3A4249;
   }
 }
 

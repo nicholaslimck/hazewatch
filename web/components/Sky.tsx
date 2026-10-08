@@ -45,9 +45,9 @@ function useSkyTokens(band: PsiBand | null) {
       s.removeProperty('--sky-ink');
     }
     // The Android status bar takes its colour from theme-color, so keep it on the surface under it
-    // (the neutral --line default from styles.css when no band is known yet).
+    // (the neutral --sky from styles.css when no band is known yet).
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', top ?? getComputedStyle(document.documentElement).getPropertyValue('--line').trim());
+    if (meta) meta.setAttribute('content', top ?? getComputedStyle(document.documentElement).getPropertyValue('--sky').trim());
   }, [band, dark]);
 }
 
