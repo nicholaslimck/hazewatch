@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { openDb } from './db.ts';
-import { ingestOnce, backfill, sgtDate, msUntilNext50, type Fetcher, type IngestState } from './ingest.ts';
+import { ingestOnce, backfill, sgtDate, msUntilNextSlot, type Fetcher, type IngestState } from './ingest.ts';
 import type { Reading } from '../shared/types.ts';
 
 const r = (ts: string, metric: string, value = 1): Reading => ({ ts, region: 'north', metric, value });
@@ -117,10 +117,12 @@ test('sgtDate', () => {
   assert.equal(sgtDate(Date.parse('2026-10-05T15:59:00Z')), '2026-10-05');
 });
 
-test('msUntilNext50', () => {
-  assert.equal(msUntilNext50(Date.parse('2026-10-06T10:49:00Z')), 60_000);
-  assert.equal(msUntilNext50(Date.parse('2026-10-06T10:50:00Z')), 3_600_000);
-  assert.equal(msUntilNext50(Date.parse('2026-10-06T10:51:00Z')), 3_540_000);
+test('msUntilNextSlot lands on the wall clock and stays in (0, interval]', () => {
+  assert.equal(msUntilNextSlot(Date.parse('2026-10-06T10:14:00Z')), 60_000); // -> :15
+  assert.equal(msUntilNextSlot(Date.parse('2026-10-06T10:49:00Z')), 660_000); // -> the hour, not :50
+  assert.equal(msUntilNextSlot(Date.parse('2026-10-06T10:15:00Z')), 15 * 60_000); // on a slot: a full interval
+  // The cadence is a parameter, so the schedule is testable without leaning on the constant.
+  assert.equal(msUntilNextSlot(Date.parse('2026-10-06T10:59:00Z'), 60), 60_000);
 });
 
 test('ingestOnce fetches today (SGT) for each endpoint', async () => {

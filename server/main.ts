@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { openDb } from './db.ts';
 import { createApp, httpUrlOrNull } from './app.ts';
-import { BACKFILL_DAYS, backfill, ingestOnce, msUntilNext50, neaFetcher, sgtDate } from './ingest.ts';
+import { BACKFILL_DAYS, backfill, ingestOnce, msUntilNextSlot, neaFetcher, sgtDate } from './ingest.ts';
 import type { IngestState } from './ingest.ts';
 import { runAlerts } from './alerts.ts';
 import { createBot } from './telegram.ts';
@@ -43,14 +43,14 @@ const ingestAndAlert = async () => {
 
 let timer: NodeJS.Timeout;
 const tick = async () => {
-  timer = setTimeout(tick, msUntilNext50(Date.now()));
+  timer = setTimeout(tick, msUntilNextSlot(Date.now()));
   try {
     await ingestAndAlert();
   } catch (e) {
-    console.error('hourly ingest failed', e);
+    console.error('scheduled ingest failed', e);
   }
 };
-timer = setTimeout(tick, msUntilNext50(Date.now()));
+timer = setTimeout(tick, msUntilNextSlot(Date.now()));
 
 // Background: first ingest, then history backfill. Never blocks requests.
 (async () => {

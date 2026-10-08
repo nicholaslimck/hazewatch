@@ -73,7 +73,7 @@ Layout: `server/` (Hono API, NEA ingest, SQLite, Telegram bot), `web/` (React ap
 
 ## Data
 
-Readings come from NEA via [data.gov.sg](https://data.gov.sg). The server refetches both endpoints hourly at :50, and nothing is pruned — history only grows, in the `aq-data` volume.
+Readings come from NEA via [data.gov.sg](https://data.gov.sg). The server refetches both endpoints every 15 minutes — NEA publishes each hour's reading roughly 15 minutes past the hour, so a quarter-hourly poll keeps the app within about 15 minutes of the source — and nothing is pruned: history only grows, in the `aq-data` volume.
 
 ## Not built
 
