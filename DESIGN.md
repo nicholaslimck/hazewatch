@@ -84,10 +84,15 @@ outline is never headless at the moment a new visitor arrives.
 
 - **Sky** — the band-coloured hero column. Holds the header row, badge, hero, notice, advisory and the
   Telegram link. Its colour is the state.
-- **Band badge** (`.sky-badge`) — appears only when the reading reaches the scale's **first alert edge**
-  (PSI 101 / AQI 151; `spec.alertEdges`), labelled `<band> air`. It is the sky *inverted*
-  (`--sky-ink` fill, `--sky` text), so it reads as a discrete state rather than a shade and inherits the
-  band's verified contrast pair. Nothing else in the hero is allowed to look like an alarm.
+- **Band badge** (`.sky-badge`) — appears whenever the hero's band is a **warning band** (anything from
+  Unhealthy up; `isWarningBand` in `bands.ts`), labelled `<band> air`. Keyed on the band rather than on
+  `alertEdges` so the badge and the surface colour can never disagree: AQI's 101–150 band
+  ("Unhealthy for sensitive groups") is painted with a warning palette but sits below AQI's first alert
+  edge. It is the sky *inverted* (`--sky-ink` fill, `--sky` text), so it reads as a discrete state
+  rather than a shade and inherits the band's verified contrast pair. Nothing else in the hero is
+  allowed to look like an alarm. Note it is *not* the push-alert threshold: Telegram alerts fire on
+  `spec.alertEdges` (PSI 101 / AQI 151, the same air on both scales), so AQI 101–150 shows the badge
+  without sending an alert.
 - **Scale switch** — PSI/AQI, a 20px outline pill inside the hero meta line, deliberately subordinate.
   Its tap pad must not overlap the scale bar's hit strips (`.scale-hit` starts at `top: -2px` for
   exactly this reason).

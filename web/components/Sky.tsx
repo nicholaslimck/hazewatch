@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { REGIONS } from '../../shared/types.ts';
 import type { Region } from '../../shared/types.ts';
-import { PALETTES, SENSITIVE_NOTE } from '../../shared/bands.ts';
+import { PALETTES, SENSITIVE_NOTE, isWarningBand } from '../../shared/bands.ts';
 import type { PsiBand } from '../../shared/bands.ts';
 import { parseSavedRegion } from '../../shared/regions.ts';
 import { SCALES } from '../../shared/scale.ts';
@@ -82,11 +82,12 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
       ))}
     </span>
   );
-  // The band badge. A discrete state, not a shade: it appears only once the reading crosses the
-  // scale's first alert edge (PSI 101 / AQI 151 — the same air on both scales, per spec.alertEdges),
-  // so "the warning is on" is legible without reading the number. Its fill is the sky inverted
-  // (--sky-ink behind --sky), so it always carries the band's own verified contrast pair.
-  const alert = band !== null && value !== undefined && value >= spec.alertEdges[0] ? band : null;
+  // The band badge. A discrete state, not a shade: it appears whenever the hero's band is a warning
+  // band, so the badge and the surface colour can never disagree. `isWarningBand` is keyed on the band
+  // rather than on alertEdges because AQI's 101–150 band is a warning colour below AQI's first alert
+  // edge. Its fill is the sky inverted (--sky-ink behind --sky), so it carries the band's own verified
+  // contrast pair and needs no new colour.
+  const alert = band !== null && isWarningBand(band) ? band : null;
   // The hero's own heading — the verdict in Simple, the reading in Numbers — is the page's h1.
   // Every other state (first run, loading, no reading, server down) still gets one, so the outline
   // is never headless exactly when a new visitor arrives.

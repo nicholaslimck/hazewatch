@@ -55,6 +55,16 @@ export function psiBand(v: number): PsiBand {
   return BANDS[bandIndex(v, PSI_EDGES)];
 }
 
+// Bands that carry a warning. Good and Moderate never do; every band from "Unhealthy" up does — which is
+// what keeps the badge and the hero's colour saying the same thing, on either scale.
+// Keyed on the band, not on `alertEdges`: AQI's "Unhealthy for sensitive groups" band (101–150) is
+// painted with a warning palette but sits below AQI's first alert edge, so an edge test left the sky
+// warning while the badge stayed silent. It also kept a badge on PSI exactly 100, the top of Moderate,
+// because that edge is inclusive while the server's alert test (`v > e`) is not.
+export function isWarningBand(b: PsiBand): boolean {
+  return b.key !== 'good' && b.key !== 'moderate';
+}
+
 export function trend(latest: number | undefined, threeHoursAgo: number | undefined): 'rising' | 'falling' | 'steady' | null {
   if (latest === undefined || threeHoursAgo === undefined) return null;
   const d = latest - threeHoursAgo;
