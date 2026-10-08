@@ -57,10 +57,11 @@ type Props = {
   scale: Scale; onScale: (s: Scale) => void;
   band: PsiBand | null; message: string | null; notice?: string | null; locating?: boolean;
   metrics: Record<string, number> | undefined; ts: string | null; points: HistoryPoint[] | null;
+  botUrl: string | null;
   children?: ReactNode;
 };
 
-export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, locating = false, metrics, ts, points, children }: Props) {
+export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, locating = false, metrics, ts, points, botUrl, children }: Props) {
   useSkyTokens(band);
   const spec = SCALES[scale];
   const value = metrics === undefined ? undefined : spec.value(metrics);
@@ -130,6 +131,18 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
         {/* The live region stays mounted so screen readers announce each new notice. */}
         <div role="status" aria-live="polite">{notice && <p className="quiet notice">{notice}</p>}</div>
         {advice && <p className="sky-advice">{advice}</p>}
+        {/* The only way to be told the air turned, made findable from the page that exists to be watched. */}
+        {botUrl && (
+          <p className="sky-alerts">
+            <a href={botUrl} target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 2 11 13" />
+                <path d="M22 2 15 22 11 13 2 9 22 2z" />
+              </svg>
+              Get alerts on Telegram
+            </a>
+          </p>
+        )}
       </div>
     </section>
   );

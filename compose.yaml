@@ -5,7 +5,7 @@ services:
     volumes:
       - aq-data:/data
       # - ./corp-root.pem:/certs/corp-root.pem:ro
-    environment: [DATA_GOV_SG_API_KEY, TELEGRAM_BOT_TOKEN, PUBLIC_URL, NODE_EXTRA_CA_CERTS]
+    environment: [DATA_GOV_SG_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_URL, PUBLIC_URL, NODE_EXTRA_CA_CERTS]
     restart: unless-stopped
 
 volumes:

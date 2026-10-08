@@ -47,6 +47,7 @@ export function App() {
   const [scale, setScale] = useState<Scale>(loadScale);
   const spec = SCALES[scale];
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
+  const [botUrl, setBotUrl] = useState<string | null>(null);
   // One short status line under the hero (locate result, share error), cleared after a few seconds.
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -98,7 +99,7 @@ export function App() {
   }
 
   useEffect(() => { if (region === null) locate(); }, []);
-  useEffect(() => { getConfig().then((c) => setPublicUrl(c.publicUrl)).catch(() => {}); }, []);
+  useEffect(() => { getConfig().then((c) => { setPublicUrl(c.publicUrl); setBotUrl(c.botUrl ?? null); }).catch(() => {}); }, []);
 
   useEffect(() => {
     let live = true;
@@ -155,7 +156,7 @@ export function App() {
     <div className="page">
       <Sky
         region={region} onRegion={choose} onLocate={locate} onShare={share} view={view} onView={chooseView}
-        scale={scale} onScale={chooseScale} band={band} message={message} notice={notice} locating={locating} metrics={metrics} ts={now?.ts ?? null} points={pm25}
+        scale={scale} onScale={chooseScale} band={band} message={message} notice={notice} locating={locating} metrics={metrics} ts={now?.ts ?? null} points={pm25} botUrl={botUrl}
       >
         {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner ts={now.ts} />}
         {needPicker && <RegionPicker onPick={choose} />}

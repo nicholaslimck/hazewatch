@@ -40,7 +40,8 @@ All settings are environment variables. Set them in your shell or in a `.env` fi
 | --- | --- |
 | `DATA_GOV_SG_API_KEY` | Optional. Raises your data.gov.sg rate limit. The app works without it. |
 | `TELEGRAM_BOT_TOKEN` | Enables the Telegram bot. Without it the bot stays off. |
-| `PUBLIC_URL` | The address the app is served from, for example `https://haze.example.com`. Exposed at `GET /api/config` as `{ "publicUrl": ... }` (`null` when unset) and used as the link on the share card. |
+| `TELEGRAM_BOT_URL` | The bot's public link, for example `https://t.me/YourBot`. Shown in the app as a "Get alerts on Telegram" link. Unset, or anything that is not an absolute `http(s)` URL, hides the link. |
+| `PUBLIC_URL` | The address the app is served from, for example `https://haze.example.com`. Exposed at `GET /api/config` as `{ "publicUrl": ..., "botUrl": ... }` (`null` when unset) and used as the link on the share card. |
 | `HOST_PORT` | Host port the app is published on (default `8081`). The container always listens on `8080`. |
 | `PORT`, `DB_PATH` | Server port (default `8080`) and SQLite path (default `./data/aq.db`). |
 
@@ -49,7 +50,7 @@ All settings are environment variables. Set them in your shell or in a `.env` fi
 The bot messages people when their region's 24h PSI turns unhealthy, changes band or clears, and never between 11pm and 7am SGT.
 
 1. Message @BotFather, send `/newbot`, and pick a name and username (suggested: `@HazeWatchSG_bot`).
-2. Set `TELEGRAM_BOT_TOKEN` to the token it gives you.
+2. Set `TELEGRAM_BOT_TOKEN` to the token it gives you, and `TELEGRAM_BOT_URL` to the bot's link (for example `https://t.me/YourBot`) so the site can point people to it.
 3. Restart. Message the bot `/start` (or `/region` to change it), pick a region, then try `/now`. `/scale` switches between PSI and AQI. `/stop` unsubscribes.
 
 The bot is open to anyone who finds it. Limits: 500 subscribers, one reply per chat every 3 seconds, and it never echoes what people type.

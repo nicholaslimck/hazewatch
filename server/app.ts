@@ -8,7 +8,21 @@ import type { Region } from '../shared/types.ts';
 
 const RANGES = ['24h', '7d', '90d'] as const;
 
-export function createApp(store: Store, state: IngestState, staticDir?: string, config: { publicUrl: string | null } = { publicUrl: null }): Hono {
+export type AppConfig = { publicUrl: string | null; botUrl: string | null };
+
+// Only an absolute http(s) URL survives, so a mistyped or hostile env value can never reach the page
+// as a link target. Anything else returns null, which hides the link.
+export function httpUrlOrNull(v: string | undefined | null): string | null {
+  if (!v) return null;
+  try {
+    const u = new URL(v);
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
+export function createApp(store: Store, state: IngestState, staticDir?: string, config: AppConfig = { publicUrl: null, botUrl: null }): Hono {
   const app = new Hono();
 
   app.use('/api/*', async (c, next) => {
