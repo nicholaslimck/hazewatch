@@ -78,6 +78,10 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
       ))}
     </span>
   );
+  // The hero's own heading — the verdict in Simple, the reading in Numbers — is the page's h1.
+  // Every other state (first run, loading, no reading, server down) still gets one, so the outline
+  // is never headless exactly when a new visitor arrives.
+  const heroHeading = message === null && metrics !== undefined && value !== undefined && ts !== null;
   return (
     <section className="sky" aria-label="Air quality now">
       <div className="sky-head">
@@ -118,6 +122,7 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
       </div>
       {children}
       <div className="sky-body">
+        {!heroHeading && <h1 className="sr-only">Singapore air quality</h1>}
         {message !== null ? <><p className="quiet">{message}</p>{metrics !== undefined && <p className="hero-meta">{toggle}</p>}</>
           : metrics === undefined || value === undefined || ts === null ? null
           : view === 'simple' ? <HeroSimple value={value} spec={spec} ts={ts} points={points} toggle={toggle} />

@@ -43,7 +43,7 @@ export function HeroNumbers({ metrics, value, spec, ts, toggle }: { metrics: Rec
       <div className="n-top">
         <Gauge value={v} segments={spec.segments} />
         <div>
-          <p className="psi-big">{v}</p>
+          <h1 className="psi-big">{v}</h1>
           <p className="hero-meta">{toggle} {spec.period}, {spec.band(v).label.toLowerCase()}</p>
         </div>
       </div>
