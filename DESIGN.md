@@ -1,148 +1,282 @@
-# DESIGN.md — HazeWatch
+---
+name: HazeWatch
+description: Singapore air quality, where the screen itself is the reading.
+colors:
+  cool-paper: "#F4F6F7"
+  wet-slate: "#1B2226"
+  rain-grey: "#5E6A71"
+  fog-line: "#DDE3E6"
+  overcast: "#AFB9BF"
+  clear-day: "#BFD9EE"
+  distant-haze: "#D6DFD8"
+  haze-gold: "#D6C193"
+  deep-haze: "#B98552"
+  smoke-umber: "#6E4936"
+  burnt-haze: "#8A5C40"
+  ink-on-clear-day: "#1F3346"
+  ink-on-distant-haze: "#2E3A33"
+  ink-on-haze-gold: "#3A2C10"
+  ink-on-deep-haze: "#2A180A"
+  ink-on-smoke-umber: "#FFF4EA"
+  ink-on-burnt-haze: "#FFF3E8"
+  daylight-blue: "#7FAFD6"
+  sage: "#A9B9AD"
+  ochre: "#C8A957"
+  clay: "#B07A45"
+  peat: "#7A5240"
+  burnt-clay: "#9A5F3C"
+typography:
+  display:
+    fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
+    fontSize: "clamp(36px, 4vw, 40px)"
+    fontWeight: 600
+    lineHeight: 1.08
+    letterSpacing: "-0.01em"
+  headline:
+    fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
+    fontSize: "64px"
+    fontWeight: 600
+    lineHeight: 0.9
+  title:
+    fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
+    fontSize: "18px"
+    fontWeight: 600
+  body:
+    fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: 1.45
+  label:
+    fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
+    fontSize: "12px"
+    fontWeight: 600
+    letterSpacing: "0.06em"
+rounded:
+  track: "3px"
+  cell: "4px"
+  row: "6px"
+  card: "8px"
+  pill: "999px"
+spacing:
+  sm: "8px"
+  md: "12px"
+  lg: "16px"
+  xl: "24px"
+  xxl: "32px"
+components:
+  band-badge:
+    backgroundColor: "{colors.wet-slate}"
+    textColor: "{colors.cool-paper}"
+    rounded: "{rounded.pill}"
+    padding: "3px 10px"
+  quiet-card:
+    backgroundColor: "{colors.cool-paper}"
+    textColor: "{colors.wet-slate}"
+    rounded: "{rounded.card}"
+    padding: "12px 14px"
+  view-toggle:
+    backgroundColor: "{colors.cool-paper}"
+    textColor: "{colors.wet-slate}"
+    rounded: "{rounded.pill}"
+    padding: "2px"
+    height: "36px"
+  region-row:
+    backgroundColor: "{colors.cool-paper}"
+    textColor: "{colors.wet-slate}"
+    rounded: "{rounded.row}"
+    height: "40px"
+  calendar-cell:
+    backgroundColor: "{colors.ochre}"
+    textColor: "{colors.wet-slate}"
+    rounded: "{rounded.cell}"
+    size: "18px"
+---
 
-Mode: **Operate** (the dashboard); the share card is Persuade-adjacent and the bot reuses both.
-The world: **the sky is the reading.** The surface colour of the hero column *is* the current band.
-Everything else in this document serves that one idea or stays out of its way.
+# Design System: HazeWatch
 
-## 1. The band ramp
+## Overview
 
-Six palettes. Five PSI bands plus `severe`, which only AQI uses. `bands.ts` is the single source; every
-colour in the UI derives from it.
+**Creative North Star: "The Sky Is the Reading"**
 
-The ramp is a **haze palette, not the AQI rainbow** — the colour of the thing the app is named for.
-It escalates twice over: the sky deepens as the air worsens, *and* a badge appears at the alert edge.
+HazeWatch does not draw a dashboard about air quality; it turns the surface into the air. The hero column's background colour *is* the active band, set at runtime from NEA's reading and crossfaded over 600ms. At PSI 148 the whole left column is haze gold with dark-brown ink; at 352 it is smoke umber. Nothing else on the page is allowed to compete with that, because the colour is not decoration — it is the datum.
 
-| Band | key | light sky | light ink | dark sky | dark ink | bar / bar-dark |
-|---|---|---|---|---|---|---|
-| Good | `good` | `#BFD9EE` | `#1F3346` | `#1E3446` | `#D6E6F3` | `#7FAFD6` / `#4F7FA6` |
-| Moderate | `moderate` | `#D6DFD8` | `#2E3A33` | `#2C3631` | `#DCE5DE` | `#A9B9AD` / `#6E8273` |
-| Unhealthy | `unhealthy` | `#D6C193` | `#3A2C10` | `#4A3A12` | `#EDDFB6` | `#C8A957` / `#B39550` |
-| Very unhealthy | `very_unhealthy` | `#B98552` | `#2A180A` | `#3A2610` | `#F3D9B4` | `#B07A45` / `#B07A45` |
-| Hazardous | `hazardous` | `#6E4936` | `#FFF4EA` | `#271812` | `#F6E1D6` | `#7A5240` / `#A0705A` |
-| Very unhealthy (AQI) | `severe` | `#8A5C40` | `#FFF3E8` | `#332014` | `#F6DCC8` | `#9A5F3C` / `#B8683F` |
+The second governing idea is honesty of state. Four distinct conditions look different and say different things: we don't know yet, we have no reading for your region, this reading is stale, and we can't reach the server. The "unknown" surface is deliberately darker than the Good band so it can never be mistaken for good news. The palette refuses the AQI traffic-light rainbow and uses a haze ramp instead — sage, ochre, clay, peat — the colour of the thing the app is named for. Escalation therefore has to come from depth and from one discrete alarm, never from hue.
 
-Rules:
+The system is otherwise quiet: flat surfaces, hairline rules instead of cards, tabular numerals throughout so any two numbers can be compared, and exactly one authored motion moment. Density is low in the hero and moderate in the evidence panels below it; the page is built for a glance, and the detail is there for whoever stays.
 
-- **Light-theme sky luminance steps**: 0.72 → 0.72 → 0.55 → 0.28 → 0.08 (relative luminance). Adjacent
-  warning bands must stay separable in lightness, not just hue, so the escalation reads under
-  colour-vision deficiency as well as in greyscale.
-- **Every ink/surface pair passes WCAG AA (min 4.63:1; most are 7–10:1).** Adding or changing a band
-  means re-checking its pair — the palette is a contrast contract, not a swatch list.
-- **Do not add a colour.** Red, orange and green are refused: a traffic-light palette is the category
-  default and would replace the app's own voice. Escalation comes from depth and from the badge.
-- `bar`/`cell` are the *deeper* shades used for the map, the region bars and the calendar — surfaces
-  where the sky colour would be too soft at small size.
+**Key Characteristics:**
 
-## 2. Tokens
+- The hero surface colour is the live reading; the neutral no-band surface is darker than Good on purpose.
+- A haze ramp, not a traffic light; escalation by depth, never by a new hue.
+- One alarm only: a single badge that appears from the Unhealthy band up.
+- Every ink/surface pair is a checked WCAG AA pair (min 4.63:1).
+- Hairlines and whitespace instead of cards; no shadows anywhere.
+- One authored motion moment (the 600ms sky crossfade); every control responds in 120ms.
+- Tabular numerals on every figure in the product.
 
-```
---bg     #F4F6F7     dark #15191C
---ink    #1B2226     dark #E6EBEE
---muted  #5E6A71     dark #8E9AA1
---line   #DDE3E6     dark #2A3136
---sky    #AFB9BF     dark #3A4249   /* the no-band neutral */
---sky-ink, --bar-<key>, --cell-<key>   /* set inline by useSkyTokens() from the active band */
-```
+## Colors
 
-- **`--sky` / `--sky-ink` are set at runtime** on `document.documentElement` from the selected region's
-  band, with a 600ms transition. The stylesheet values are the fallback for "no band known yet".
-- **The neutral no-band sky is deliberately darker than the Good band** (0.48 vs 0.67 luminance) so
-  "we don't know yet" can never read as "the air is fine". Never lighten it toward Good.
-- `meta[name=theme-color]` follows the sky so the Android status bar matches the surface under it.
+A haze palette: two pale start-of-day surfaces, then four progressively deeper earth tones, with a parallel set of deeper shades for small marks.
 
-## 3. Type
+### Primary
 
-`Bricolage Grotesque Variable`, system-ui fallback. `font-variant-numeric: tabular-nums` on `:root` —
-every number in the product is read in comparison with another number.
+- **Clear Day** (#BFD9EE): the Good sky. The only cool, high-luminance surface in the ramp; it reads as weather, not as a signal.
+- **Distant Haze** (#D6DFD8): the Moderate sky. A desaturated grey-green, deliberately the *lightest* surface — Moderate gets the calmest treatment of the whole ramp.
+- **Haze Gold** (#D6C193): the Unhealthy sky. Warm, dusty, and still comfortable; the first band that earns a badge.
+- **Deep Haze** (#B98552): the Very unhealthy sky. Clearly darker and more saturated; the page starts to close in.
+- **Smoke Umber** (#6E4936): the Hazardous sky. Dark enough that the ink pair flips to light — the only band where the hero reads as genuinely dark.
+- **Burnt Haze** (#8A5C40): the AQI-only "Very unhealthy" sky, sitting between Deep Haze and Smoke Umber.
 
-| Role | Size | Weight | Notes |
-|---|---|---|---|
-| Verdict (`h1`, Simple) | 36 → 40px @900px | 600 | `line-height: 1.08`, tracking −0.01em |
-| Reading (`h1`, Numbers) | 64px | 600 | `line-height: 0.9` |
-| Section (`h2`) | **18px** | 600 | Must stay above body 15px; four of them carry the page's scan structure |
-| Hero meta | 17px | 400 | the number, its band, the scale switch |
-| Body | 15px | 400 | `line-height: 1.45` |
-| Caption | 13px | 400 | muted; chart ticks, panel captions |
-| Micro | 12px | 400–600 | `legend`, `pol-head`, group headings, footer |
+### Secondary
 
-The `h1` is the verdict in Simple and the reading in Numbers. **Every state renders an `h1`** — including
-first-run, loading, no-reading and offline, where it is the sr-only "Singapore air quality" — so the
-outline is never headless at the moment a new visitor arrives.
+- **Daylight Blue / Sage / Ochre / Clay / Peat / Burnt Clay** (#7FAFD6 · #A9B9AD · #C8A957 · #B07A45 · #7A5240 · #9A5F3C): the deeper per-band shades used for the map zones, the region bars and the 90-day calendar cells — every surface where the sky tone would be too soft at small size. They map one-to-one to the six skies.
 
-## 4. Layout and rhythm
+### Neutral
 
-- 8px base unit. Sections are separated by a `1px --line` rule with 24px above it, not by cards.
-- **The sky**: `min-height: 60vh`, `flex column`. At ≥900px it becomes `position: sticky; height: 100vh`.
-- **Desktop ≥900px**: `.page` is `grid-template-columns: 5fr 6fr` — sky left, evidence right.
-- **≥1280px**: the trend chart and the 90-day calendar sit side by side; below that they stack so the
-  calendar cells keep their size. (At exactly 1280 the day cells are 18px with a 24px hit area — the
-  WCAG 2.5.8 floor. Do not narrow this breakpoint.)
-- The hero sits at the **top** of the sky and the leftover height falls below it. Never centre or
-  bottom-anchor it.
+- **Cool Paper** (#F4F6F7): the page and the evidence column.
+- **Wet Slate** (#1B2226): body ink and the badge fill.
+- **Rain Grey** (#5E6A71): captions, legends, secondary text.
+- **Fog Line** (#DDE3E6): hairlines and the region-bar tracks.
+- **Overcast** (#AFB9BF): the **no-band** sky — the surface shown before any reading is known.
 
-## 5. Components
+### Named Rules
 
-- **Sky** — the band-coloured hero column. Holds the header row, badge, hero, notice, advisory and the
-  Telegram link. Its colour is the state.
-- **Band badge** (`.sky-badge`) — appears whenever the hero's band is a **warning band** (anything from
-  Unhealthy up; `isWarningBand` in `bands.ts`), labelled `<band> air`. Keyed on the band rather than on
-  `alertEdges` so the badge and the surface colour can never disagree: AQI's 101–150 band
-  ("Unhealthy for sensitive groups") is painted with a warning palette but sits below AQI's first alert
-  edge. It is the sky *inverted* (`--sky-ink` fill, `--sky` text), so it reads as a discrete state
-  rather than a shade and inherits the band's verified contrast pair. Nothing else in the hero is
-  allowed to look like an alarm. Note it is *not* the push-alert threshold: Telegram alerts fire on
-  `spec.alertEdges` (PSI 101 / AQI 151, the same air on both scales), so AQI 101–150 shows the badge
-  without sending an alert.
-- **Scale switch** — PSI/AQI, a 20px outline pill inside the hero meta line, deliberately subordinate.
-  Its tap pad must not overlap the scale bar's hit strips (`.scale-hit` starts at `top: -2px` for
-  exactly this reason).
-- **Scale bar** (`HeroSimple`) — segmented in band units, current value marked with a dot, one tooltip
-  per segment on hover/tap/focus carrying the band name, range and advice.
-- **Gauge + pollutant grid** (`HeroNumbers`) — a vertical band gauge beside the big number, then
-  **two groups: Particles (≤2 rows) and Gases (≤4 rows)**, each headed by an uppercase label with a
-  full-width hairline so the heading owns both columns. The dominant pollutant is bolded. Never one flat
-  list.
-- **Region map + rows** — map first (primary), then a compact ranked list. Bars are drawn on a domain
-  that **starts and ends on a band edge** (`Regions.tsx`) so the five regions are actually comparable;
-  band edges inside the domain are drawn as ticks and the range is stated in the caption.
-- **Trend chart** — 24h PM2.5 line, gaps preserved, band start lines dashed and labelled.
-- **Calendar** — 90 daily cells, roving tabindex (one tab stop), month labels, band legend.
-- **Quiet card** (`.quiet`) — the message surface for loading / no reading / offline. When offline it
-  *becomes* the retry button (`.quiet.retry`); there is no separate Retry control.
-- **Stale banner** — one line in the sky's own ink with a 6px dot. No card, no coloured side border.
+**The Haze Rule.** There is no traffic-light palette. Red, orange and green are refused at every level; escalation comes from depth, saturation and the badge. A new severity state earns a deeper haze tone, never a new hue.
 
-## 6. Motion
+**The Contract Rule.** Every ink/surface pair is a WCAG AA pair (min 4.63:1, most 7–10:1). A band is not a swatch; it is a contrast contract, and adding or changing one means re-checking its pair before it ships.
 
-One authored moment: the 600ms sky colour change. Control feedback is 120ms. The locate crosshair pulses
-while the browser is answering. Everything is gated behind `prefers-reduced-motion: reduce`.
+**The Darker-Than-Good Rule.** The no-band Overcast surface must stay clearly darker than Clear Day (0.48 vs 0.67 luminance, measured as relative luminance). "We don't know yet" must never read as "the air is fine". Never lighten it toward Good.
 
-## 7. Accessibility contract
+## Typography
 
-- Body text ≥4.5:1, large text ≥3:1. Ink on a band is derived from that band, never greyed.
-- Targets: 44px for primary controls; 40px for region rows; 36px visual / 46px effective for the view
-  toggle; a 24px floor everywhere, including the calendar. Effective size = box + any `::after` pad.
-- Focus: `2px currentColor` outline, drawn as an SVG overlay on the map zones and calendar cells.
-- Live regions: the offer/status notice and the band badge are `role="status"`.
-- The calendar is a single tab stop with arrow-key movement; Home/End jump to the ends.
-- Links inline in a sentence are exempt from the target minimum.
+**Display Font:** Bricolage Grotesque Variable (with system-ui, sans-serif)
+**Body Font:** Bricolage Grotesque Variable (with system-ui, sans-serif)
 
-## 8. Copy rules
+**Character:** One variable grotesque across the whole product, humanist-soft at display size and plain at text size. `font-variant-numeric: tabular-nums` is set on `:root`, because every number in this product exists to be compared with another number. There is no second family and no mono; a mono would imply code where the content is measurement.
 
-- Controls name their action; errors name the problem and the recovery ("Can't reach the server right
-  now. Last update 2:00 pm. Tap to retry.").
-- The verdict is in the reader's language, never the agency's: "Skip the long run today", not
-  "reduce strenuous outdoor exertion".
-- Say when something is not official, on the surface that shows it: the AQI explainer sits in the
-  footer in AQI mode; the map says its zones are not boundaries.
+### Hierarchy
 
-## 9. States to keep working
+- **Display** (600, clamp 36→40px, 1.08, −0.01em): the verdict in Simple view — "Hazy. Skip the long run today." This is the page's `h1` and its largest text on mobile.
+- **Headline** (600, 64px, 0.9): the reading in Numbers view, set beside a vertical band gauge.
+- **Title** (600, 18px): the section headings — "Around Singapore", "Last 24 hours", "Last 90 days". Must stay clearly above body size; these four headings carry the page's scan structure.
+- **Body** (400, 15px, 1.45): captions of record, advice copy, region rows, pollutant rows.
+- **Label** (600, 12px, 0.06em, uppercase): group headings ("Particles", "Gases"), legends, footer, the "Sub-index, then concentration" caption.
 
-loading · first-run picker · geolocation denied · no reading for this region · waiting for first data ·
-stale (>120 min) · offline (with last-update time and both an auto-backoff and a tappable retry).
+Hero meta text runs at 17px — the number, its band name and the scale switch, sitting directly under the verdict.
 
-## 10. Refused
+### Named Rules
 
-Traffic-light red/orange/green · a new colour for a new state · gradients · coloured
-`border-left`/`border-right` above 1px · icon fonts or unicode glyphs standing in for icons (icons are
-authored SVG) · cards as page structure · a kicker above the heading · centring the hero in the sky's
-empty height.
+**The Verdict Rule.** The `h1` is the answer in the reader's language, never the agency's. It is the verdict in Simple view and the reading in Numbers view, and **every** state renders one — first-run, loading, no-reading and offline fall back to an `sr-only` "Singapore air quality" so the outline is never headless at the moment a new visitor arrives.
+
+## Layout
+
+Base unit 8px. The page is a two-column split on desktop and a single column below 900px.
+
+- **`.page`** at ≥900px is `grid-template-columns: 5fr 6fr` — the sky on the left, the evidence on the right.
+- **The sky** is `min-height: 60vh` and a flex column on mobile; from 900px it becomes `position: sticky; height: 100vh`, so the reading stays with the reader while the evidence scrolls.
+- **The evidence column** (`.rest`) pads 24/18 on mobile and 32/40 on desktop. Sections are separated by a 1px Fog Line rule with 24px above and below it — not by cards.
+- **≥1280px** the 24-hour chart and the 90-day calendar sit side by side (`1fr 1fr`, 32px gap). Below that they stack full width so the calendar cells keep their size. At exactly 1280 the day cells render 18px with a 24px hit area — the WCAG 2.5.8 floor — so this breakpoint is a floor, not a preference.
+- **Targets:** 44px for primary controls (locate, share, region select, picker buttons), 40px for region rows, 36px visual / 46px effective for the view toggle, and a 24px minimum everywhere including the 90-day grid. Effective size means the box plus any `::after` pad.
+
+### Named Rules
+
+**The Top-Anchored Rule.** The hero sits at the top of the sky and the leftover viewport height falls *below* it. The hero is never centred and never bottom-anchored — the empty sky is the surface the reading colours, not a mat for centring content.
+
+## Elevation & Depth
+
+**No shadows. At all.** There is no `box-shadow` vocabulary in this system; depth is entirely tonal. Hierarchy comes from the sky's colour depth, from Fog Line hairlines between sections, and from whitespace. The one apparent exception is the calendar's selected day, which uses an inset `box-shadow` purely as a 2px ring — an outline drawn with a shadow, not a lift.
+
+Dark mode is a genuine second palette rather than a filter: surfaces go to #15191C and the six sky tones are re-cut as deep, desaturated grounds, each keeping its own verified ink pair.
+
+### Named Rules
+
+**The Flat Rule.** Nothing lifts, floats or glows. If an element needs to stand out it earns a deeper tone, a hairline, or weight — never a shadow.
+
+## Shapes
+
+The form language is soft rectangles with one pill:
+
+- **Pills (999px)** are for *state*: the view toggle, the PSI/AQI scale switch, the band badge. Anything that reports a current mode is a pill.
+- **Cards (8px)** are for the two message surfaces — the quiet card and the region picker. Nothing else is a card.
+- **Rows (6px)** and **cells (4px)** take progressively tighter corners as they get smaller and denser.
+- **Tracks (3px)** — the region-bar and scale-bar tracks — are near-square so they read as measurement, not as buttons.
+
+Borders are 1px hairlines in Fog Line, never coloured. Icons are authored SVG at a consistent 2px stroke, never an icon font and never a unicode glyph.
+
+### Named Rules
+
+**The Quiet Corner Rule.** Radius is a size signal, not a style: smaller element, smaller radius. Pills are reserved for state so that a pill always means "this is the current mode".
+
+## Components
+
+### Band badge
+
+The system's only alarm. Inverted out of the sky — the badge is filled with the hero's ink and lettered in the hero's surface colour, so it always carries the band's own verified contrast pair and never needs a colour of its own.
+
+- **Shape:** pill (999px), 3px 10px padding, 13px/600.
+- **When:** renders whenever the hero's band is a warning band — anything from Unhealthy up (`isWarningBand` in `shared/bands.ts`), labelled `<band> air`.
+- **Hover / Focus:** not interactive; it is a `role="status"` announcement, not a control.
+
+### Quiet card
+
+The single message surface, reused for loading, "no reading for this region", and offline.
+
+- **Shape:** 8px radius, 1px Fog Line hairline, Cool Paper ground, 12px 14px padding.
+- **Retry variant:** when offline the card *becomes* the control (`.quiet.retry`) — same box, now a `<button>`, no separate Retry control beside it. Hover and active tint the ground with `currentColor` at 6% and 12%.
+
+### View toggle & scale switch
+
+Two pills that report mode.
+
+- **View toggle:** 36px tall, 2px padding, 13px/600 segments; the checked segment inverts to Wet Slate on the sky's ink. A `::after` pad extends the tap area to 46px while the visual stays 36px.
+- **Scale switch (PSI/AQI):** deliberately smaller — a 20px outline-only pill in the hero meta line, subordinate to the toggle. Its tap pad must not overlap the scale bar's hit strips; `.scale-hit` starts at `top: -2px` for exactly that reason.
+
+### Region map & rows
+
+- **Map first.** Five hand-built SVG zones coloured by band shade, each a focusable `role="button"` with an authored 2px stroke; selection and keyboard focus are non-interactive overlays drawn after every zone.
+- **Rows second,** compact: a ranked list under the map, 40px minimum height, a 6px track, and a band-shade fill on a domain that **starts and ends on a band edge** so the five regions are actually comparable. Band edges inside that domain are drawn as 1px ticks, and the caption states the range.
+
+### Numbers: gauge & pollutant grid
+
+- A 14px vertical band gauge beside the 64px reading.
+- The pollutant list is **two groups — Particles (≤2 rows) and Gases (≤4 rows)** — each headed by an uppercase label with a full-width hairline so the heading owns both columns. The dominant pollutant is bolded. Never one flat list of six.
+
+### Calendar
+
+- 90 daily cells, 4px radius, filled with the band shade, one tab stop for the whole grid with arrow-key movement (Home/End jump to the ends).
+- The current day carries an outer 2px ring; the selected day an inner ring, so the three states stay distinct.
+- A band legend sits beneath, because the cells encode by colour.
+
+### Trend chart
+
+- 24-hour PM2.5 line, gaps preserved as gaps, band start lines dashed and labelled, ticks below the plot so a label never covers the data.
+
+### Named Rules
+
+**The One Alarm Rule.** The band badge is the only element in the hero permitted to look like an alarm. If something else starts looking urgent, it is wrong.
+
+**The Card-Is-A-Message Rule.** Only the quiet card and the region picker are cards. Sections are separated by hairlines, not by wrapping them in boxes.
+
+## Do's and Don'ts
+
+### Do:
+
+- **Do** keep the badge and the sky colour in agreement by keying the badge on the band (`isWarningBand`), not on the alert edge.
+- **Do** re-check the ink/surface contrast pair when any band colour changes; the floor is 4.63:1 and most pairs run 7–10:1.
+- **Do** keep the neutral no-band sky darker than the Good band.
+- **Do** state the scale's real range in place when bars are drawn on a narrowed domain ("The bars share one scale, 100–200").
+- **Do** name the action and the recovery in errors: "Can't reach the server right now. Last update 2:00 pm. Tap to retry."
+- **Do** render an `h1` in every state, even when it has to be `sr-only`.
+- **Do** keep every state honest and distinct: unknown, no reading, stale (>120 min) and offline are four different screens.
+- **Do** use tabular numerals for every figure.
+
+### Don't:
+
+- **Don't** introduce a traffic-light red/orange/green, or a new colour for a new severity state.
+- **Don't** use a coloured `border-left` or `border-right` above 1px on any card, row or alert — the stale banner is one line of text and a 6px dot for exactly this reason.
+- **Don't** add shadows, glows, gradients or glass; depth is tonal.
+- **Don't** centre or bottom-anchor the hero in the sky's leftover height.
+- **Don't** add a kicker or eyebrow above a heading.
+- **Don't** put icon fonts, emoji or unicode glyphs in place of icons; icons are authored SVG on a consistent stroke.
+- **Don't** let a control's box fall under 24px without an `::after` pad to carry it there, and don't measure target size without counting that pad.
+- **Don't** wrap sections in cards, and never nest cards.
