@@ -70,6 +70,10 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 @media (min-width: 900px) {
   .page { display: grid; grid-template-columns: 5fr 6fr; align-items: start; }
   .rest { padding: 32px 40px 40px; }
+}
+/* The trend and the 90-day grid sit side by side only once the calendar's cells clear the 24px WCAG AA
+   target minimum; below this the pair stacks and each takes the full column (cells stay ~26px+). */
+@media (min-width: 1280px) {
   .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
   .pair > * + * { border-top: 0; margin-top: 0; padding-top: 0; }
 }
@@ -168,7 +172,12 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
   background: var(--bg); color: var(--ink); border: 1px solid var(--line);
   border-radius: 8px; padding: 12px 14px;
 }
-.banner { border-left: 4px solid var(--bar-unhealthy, #C8A957); }
+/* Stale notice: the warning is carried by the whole tinted surface, not a 4px side tab — the
+   category's most recognisable slop tell. Same amber, same meaning, no tell. */
+.banner {
+  background: color-mix(in srgb, var(--bar-unhealthy, #C8A957) 16%, var(--bg));
+  border-color: color-mix(in srgb, var(--bar-unhealthy, #C8A957) 40%, var(--line));
+}
 .picker-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .picker-options button {
   background: transparent; border: 1px solid var(--line); border-radius: 8px;
@@ -203,8 +212,9 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .months { grid-template-columns: repeat(14, 1fr); margin-top: 6px; font-size: 12px; color: var(--muted); }
 .months span { white-space: nowrap; }
 .cell { position: relative; display: block; aspect-ratio: 1; min-width: 0; border: 0; padding: 0; border-radius: 4px; }
-/* Stretch the hit area over the 3px gaps, so a tap anywhere in the grid lands on a day. */
-button.cell::after { content: ''; position: absolute; inset: -2px; }
+/* Stretch the hit area over the 3px gaps so a tap anywhere in the grid lands on a day, and wide
+   enough to clear the 24px WCAG AA target minimum even at the smallest desktop cell (18px + 3px a side). */
+button.cell::after { content: ''; position: absolute; inset: -3px; }
 .cell.empty { background: var(--line); }
 .cell.out { visibility: hidden; }
 .cell.today { outline: 2px solid var(--ink); outline-offset: 1px; }
