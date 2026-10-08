@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Region } from '../shared/types.ts';
 import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
-import { regionName } from '../shared/format.ts';
+import { regionName, fmtTime } from '../shared/format.ts';
 import { SCALES } from '../shared/scale.ts';
 import type { Scale } from '../shared/scale.ts';
 import { getConfig, getNow, useHistory } from './api.ts';
@@ -16,7 +16,6 @@ import { RegionPicker } from './components/RegionPicker.tsx';
 import { makeCardFile, shareFile, shareText } from './share.ts';
 
 const REFRESH_MS = 10 * 60 * 1000;
-const SENSITIVE = ' Elderly, children, pregnant women and people with heart or lung conditions should take extra care.';
 
 // Official explainer pages, checked 2026-10-06.
 const EXPLAINERS = [
@@ -44,10 +43,15 @@ export function App() {
   const [data, setData] = useState<{ now: NowResponse } | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [tick, setTick] = useState(0);
+  // The last reading actually received, so a failed fetch can say how old the screen is.
+  const [lastGoodTs, setLastGoodTs] = useState<string | null>(null);
+  // Consecutive failed fetches; each one lengthens the retry delay until the server answers.
+  const [failStreak, setFailStreak] = useState(0);
   const [view, setView] = useState<View>(loadView);
   const [scale, setScale] = useState<Scale>(loadScale);
   const spec = SCALES[scale];
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
+  const [botUrl, setBotUrl] = useState<string | null>(null);
   // One short status line under the hero (locate result, share error), cleared after a few seconds.
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -99,13 +103,19 @@ export function App() {
   }
 
   useEffect(() => { if (region === null) locate(); }, []);
-  useEffect(() => { getConfig().then((c) => setPublicUrl(c.publicUrl)).catch(() => {}); }, []);
+  useEffect(() => { getConfig().then((c) => { setPublicUrl(c.publicUrl); setBotUrl(c.botUrl ?? null); }).catch(() => {}); }, []);
 
   useEffect(() => {
     let live = true;
     getNow()
-      .then((now) => { if (live) { setData({ now }); setLoadFailed(false); } })
-      .catch(() => { if (live) setLoadFailed(true); }); // keep last good data on screen
+      .then((now) => {
+        if (!live) return;
+        setData({ now });
+        setLoadFailed(false);
+        setFailStreak(0);
+        if (now.ts !== null) setLastGoodTs(now.ts);
+      })
+      .catch(() => { if (live) { setLoadFailed(true); setFailStreak((n) => n + 1); } }); // keep last good data on screen
     return () => { live = false; };
   }, [tick]);
 
@@ -115,6 +125,15 @@ export function App() {
     document.addEventListener('visibilitychange', refresh);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', refresh); };
   }, []);
+
+  // A failed fetch retries on its own, backing off from 30s toward the normal cadence and resetting
+  // the moment the server answers, so a dropped connection heals without the user doing anything.
+  // The offline card is also tappable, for when they would rather not wait.
+  useEffect(() => {
+    if (!loadFailed) return;
+    const id = setTimeout(() => setTick((t) => t + 1), Math.min(REFRESH_MS, 30_000 * 2 ** Math.max(0, failStreak - 1)));
+    return () => clearTimeout(id);
+  }, [loadFailed, failStreak, tick]);
 
   const now = data?.now ?? null;
   // From ts, not server ageMinutes, so a cached offline response shows its real age.
@@ -146,7 +165,11 @@ export function App() {
     }
   }
 
-  const message = now === null ? (loadFailed ? "Can't reach the server right now. Trying again shortly." : 'Loading…')
+  const retryable = now === null && loadFailed;
+  const message = now === null
+    ? (loadFailed
+      ? `Can't reach the server right now.${lastGoodTs !== null ? ` Last update ${fmtTime(lastGoodTs)}.` : ''} Tap to retry.`
+      : 'Loading…')
     : now.ts === null ? 'Waiting for first data from NEA'
     : region === null ? (needPicker ? null : 'Finding your region…')
     : value === undefined ? `No ${spec.name} reading for this region yet`
@@ -156,9 +179,10 @@ export function App() {
     <div className="page">
       <Sky
         region={region} onRegion={choose} onLocate={locate} onShare={share} view={view} onView={chooseView}
-        scale={scale} onScale={chooseScale} band={band} message={message} notice={notice} locating={locating} metrics={metrics} ts={now?.ts ?? null} points={pm25}
+        scale={scale} onScale={chooseScale} band={band} message={message} notice={notice} locating={locating} metrics={metrics} ts={now?.ts ?? null} points={pm25} botUrl={botUrl}
+        retryable={retryable} onRetry={() => setTick((t) => t + 1)}
       >
-        {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner ts={now.ts} />}
+        {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner />}
         {needPicker && <RegionPicker onPick={choose} />}
       </Sky>
 
@@ -173,7 +197,7 @@ export function App() {
           </>
         )}
         <footer className="footer">
-          {band && <p>{spec.source} advice: {band.advice}.{band.sensitiveNote && SENSITIVE}</p>}
+          {/* The band's advisory now renders in the sky, beside the reading it explains. */}
           {scale === 'aqi' && (
             <p>
               AQI here is the US EPA index, worked out from NEA's hourly PM2.5 using NowCast, a weighted average of the last 12 hours.

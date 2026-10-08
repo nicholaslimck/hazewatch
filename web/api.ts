@@ -15,7 +15,7 @@ async function getJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-export const getConfig = () => getJson<{ publicUrl: string | null }>('/api/config');
+export const getConfig = () => getJson<{ publicUrl: string | null; botUrl: string | null }>('/api/config');
 
 export const getNow = () => getJson<NowResponse>('/api/now');
 

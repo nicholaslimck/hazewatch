@@ -3,8 +3,10 @@
   --ink: #1B2226;
   --muted: #5E6A71;
   --line: #DDE3E6;
-  /* Neutral sky until a band is known; App sets --sky, --sky-ink, --bar-*, --cell-* inline. */
-  --sky: var(--line);
+  /* Sky before a band is known. A neutral clearly darker than the "Good" band, so "no reading yet"
+     never reads as "the air is fine" — lightness alone separates them, colour vision aside.
+     App sets --sky, --sky-ink, --bar-*, --cell-* inline once a band is known. */
+  --sky: #AFB9BF;
   --sky-ink: var(--ink);
   font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
@@ -21,6 +23,7 @@
     --ink: #E6EBEE;
     --muted: #8E9AA1;
     --line: #2A3136;
+    --sky: #3A4249;
   }
 }
 
@@ -28,7 +31,7 @@
 body { margin: 0; }
 h1, h2, p, ul, dl, dd { margin: 0; padding: 0; }
 ul { list-style: none; }
-h2 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+h2 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
 a { color: inherit; }
 select, button { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -67,6 +70,10 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 @media (min-width: 900px) {
   .page { display: grid; grid-template-columns: 5fr 6fr; align-items: start; }
   .rest { padding: 32px 40px 40px; }
+}
+/* The trend and the 90-day grid sit side by side only once the calendar's cells clear the 24px WCAG AA
+   target minimum; below this the pair stacks and each takes the full column (cells stay ~26px+). */
+@media (min-width: 1280px) {
   .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
   .pair > * + * { border-top: 0; margin-top: 0; padding-top: 0; }
 }
@@ -83,7 +90,27 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 }
 @media (prefers-reduced-motion: reduce) { .sky { transition: none; } }
 .sky-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.sky-body { margin-top: auto; }
+/* The band's advisory sits under the reading it explains. No auto margin on the body: the sky's
+   remaining height falls below the content, not above it, so the verdict is not pushed down. */
+.sky-advice { margin-top: 20px; max-width: 68ch; font-size: 14px; line-height: 1.45; }
+/* The band badge. Rendered only from the scale's first alert edge up, filled with the sky inverted, so
+   "the warning is on" is a discrete state rather than a shade of the same surface — and it inherits the
+   band's own verified ink/surface contrast instead of needing a new pair. */
+.sky-badge {
+  display: inline-flex; align-items: center; width: fit-content;
+  margin: 4px 0 10px; padding: 3px 10px; border-radius: 999px;
+  background: var(--sky-ink); color: var(--sky);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.01em;
+}
+/* The Telegram alerts entry point: compact enough to read as a link rather than a button, while
+   keeping a 24px target (the WCAG AA minimum). */
+.sky-alerts { margin-top: 6px; }
+.sky-alerts a {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 24px;
+  font-size: 13px; font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+.sky-alerts svg { flex: none; }
 .where { display: flex; align-items: center; gap: 4px; }
 .region { position: relative; display: inline-flex; align-items: center; }
 /* Visible face hugs the name; the native select sits invisibly on top so the picker still works. */
@@ -127,7 +154,9 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .scale-wrap { position: relative; margin-top: 16px; }
 /* Invisible per-segment hit areas over the bar, 40px tall so they're easy to tap. */
 .scale-hit {
-  position: absolute; top: -12px; height: 40px; padding: 0;
+  /* Sits on the bar itself. It used to reach 12px above, which overlapped the extended tap pad of the
+     PSI/AQI switch in the meta line above, so the bottom of that control opened a band tooltip. */
+  position: absolute; top: -2px; height: 32px; padding: 0;
   background: transparent; border: 0; border-radius: 6px; cursor: help;
 }
 .scale-hit:focus-visible { outline: 2px solid var(--sky-ink); outline-offset: -8px; }
@@ -150,13 +179,34 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .pol-sub { display: block; font-size: 12px; }
 .pol-head { font-size: 12px; margin-top: 18px; opacity: 0.85; }
 .pol-head + .pol { margin-top: 8px; }
+/* Two groups, never more than four rows each. The rule under a group heading runs the full width so
+   both cells read as belonging to it rather than to the column they sit in. */
+.pol-group { margin-top: 14px; }
+.pol-head2 {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.pol-head2::after { content: ''; flex: 1; height: 1px; background: color-mix(in srgb, currentColor 22%, transparent); }
+.pol-group .pol { margin-top: 0; }
 
 /* Quiet bars: messages, stale banner, picker */
 .quiet, .banner, .picker {
   background: var(--bg); color: var(--ink); border: 1px solid var(--line);
   border-radius: 8px; padding: 12px 14px;
 }
-.banner { border-left: 4px solid var(--bar-unhealthy, #C8A957); }
+/* Offline: the card itself is the retry control, so recovery needs no second button to hunt for. */
+.quiet.retry { display: block; width: 100%; text-align: left; cursor: pointer; }
+.quiet.retry:hover { background: color-mix(in srgb, var(--ink) 6%, var(--bg)); }
+.quiet.retry:active { background: color-mix(in srgb, var(--ink) 12%, var(--bg)); }
+/* Stale data: a one-line note in the sky's own ink, not a card. It sits above the verdict, so it must
+   not out-shout it; the amber dot keeps the status colour without the card's weight. */
+.banner {
+  display: flex; align-items: center; gap: 7px;
+  background: none; border: 0; border-radius: 0; padding: 0;
+  font-size: 13px; line-height: 1.35;
+}
+.banner::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--bar-unhealthy, #C8A957); }
 .picker-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .picker-options button {
   background: transparent; border: 1px solid var(--line); border-radius: 8px;
@@ -165,13 +215,15 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 
 /* Around Singapore */
 .row {
-  display: grid; grid-template-columns: 64px 1fr 34px; align-items: center; gap: 10px;
-  width: 100%; min-height: 44px; padding: 0; background: transparent; border: 0; text-align: left;
+  display: grid; grid-template-columns: 64px 1fr 38px; align-items: center; gap: 8px;
+  width: 100%; min-height: 40px; padding: 0; background: transparent; border: 0; text-align: left;
 }
 .row.selected { font-weight: 600; }
 .row { border-radius: 6px; }
-.track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
-.fill { display: block; height: 100%; border-radius: 4px; }
+.track { position: relative; height: 6px; background: var(--line); border-radius: 3px; }
+.fill { display: block; height: 100%; border-radius: 3px; }
+/* Band edges inside the narrowed bar domain, so a bar stays readable against the real scale. */
+.tick { position: absolute; top: -3px; bottom: -3px; width: 1px; background: color-mix(in srgb, var(--ink) 32%, transparent); }
 .psi { text-align: right; }
 .no-reading { grid-column: 2 / 4; }
 
@@ -191,8 +243,9 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .months { grid-template-columns: repeat(14, 1fr); margin-top: 6px; font-size: 12px; color: var(--muted); }
 .months span { white-space: nowrap; }
 .cell { position: relative; display: block; aspect-ratio: 1; min-width: 0; border: 0; padding: 0; border-radius: 4px; }
-/* Stretch the hit area over the 3px gaps, so a tap anywhere in the grid lands on a day. */
-button.cell::after { content: ''; position: absolute; inset: -2px; }
+/* Stretch the hit area over the 3px gaps so a tap anywhere in the grid lands on a day, and wide
+   enough to clear the 24px WCAG AA target minimum even at the smallest desktop cell (18px + 3px a side). */
+button.cell::after { content: ''; position: absolute; inset: -3px; }
 .cell.empty { background: var(--line); }
 .cell.out { visibility: hidden; }
 .cell.today { outline: 2px solid var(--ink); outline-offset: 1px; }

@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { openDb } from './db.ts';
-import { createApp } from './app.ts';
+import { createApp, httpUrlOrNull } from './app.ts';
 import { BACKFILL_DAYS, backfill, ingestOnce, msUntilNext50, neaFetcher, sgtDate } from './ingest.ts';
 import type { IngestState } from './ingest.ts';
 import { runAlerts } from './alerts.ts';
@@ -14,7 +14,13 @@ mkdirSync(dirname(dbPath), { recursive: true });
 
 const store = openDb(dbPath);
 const state: IngestState = { lastIngestAt: null, lastError: null };
-const server = serve({ fetch: createApp(store, state, 'dist', { publicUrl: process.env.PUBLIC_URL || null }).fetch, port }, () => console.log(`listening on :${port}`));
+const server = serve({
+  fetch: createApp(store, state, 'dist', {
+    publicUrl: process.env.PUBLIC_URL || null,
+    botUrl: httpUrlOrNull(process.env.TELEGRAM_BOT_URL),
+  }).fetch,
+  port,
+}, () => console.log(`listening on :${port}`));
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = token ? createBot({ token, store }) : null;

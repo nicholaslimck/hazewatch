@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { REGIONS } from '../../shared/types.ts';
 import type { Region } from '../../shared/types.ts';
-import { PALETTES } from '../../shared/bands.ts';
+import { PALETTES, SENSITIVE_NOTE, isWarningBand } from '../../shared/bands.ts';
 import type { PsiBand } from '../../shared/bands.ts';
 import { parseSavedRegion } from '../../shared/regions.ts';
 import { SCALES } from '../../shared/scale.ts';
@@ -45,9 +45,9 @@ function useSkyTokens(band: PsiBand | null) {
       s.removeProperty('--sky-ink');
     }
     // The Android status bar takes its colour from theme-color, so keep it on the surface under it
-    // (the neutral --line default from styles.css when no band is known yet).
+    // (the neutral --sky from styles.css when no band is known yet).
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', top ?? getComputedStyle(document.documentElement).getPropertyValue('--line').trim());
+    if (meta) meta.setAttribute('content', top ?? getComputedStyle(document.documentElement).getPropertyValue('--sky').trim());
   }, [band, dark]);
 }
 
@@ -57,13 +57,20 @@ type Props = {
   scale: Scale; onScale: (s: Scale) => void;
   band: PsiBand | null; message: string | null; notice?: string | null; locating?: boolean;
   metrics: Record<string, number> | undefined; ts: string | null; points: HistoryPoint[] | null;
+  botUrl: string | null;
+  retryable?: boolean; onRetry?: () => void;
   children?: ReactNode;
 };
 
-export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, locating = false, metrics, ts, points, children }: Props) {
+export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, locating = false, metrics, ts, points, botUrl, retryable = false, onRetry, children }: Props) {
   useSkyTokens(band);
   const spec = SCALES[scale];
   const value = metrics === undefined ? undefined : spec.value(metrics);
+  // One advisory line, not three. The verdict above already says what to do, so a band's terse advice is
+  // dropped when the band carries its own sensitive-groups note (PSI >= Unhealthy) and the note stands in
+  // its place; AQI bands have no such note, so their advice — which IS the sensitive-groups guidance —
+  // stays. The "NEA advice:" / "US EPA advice:" prefix went with the duplicate.
+  const advice = band ? (band.sensitiveNote ? SENSITIVE_NOTE : band.advice || null) : null;
   // Stands in for the scale's name on the hero's meta line, so it sits on the number it changes.
   // Kept on screen when this scale has no reading so the user can switch back.
   const toggle = (
@@ -75,6 +82,16 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
       ))}
     </span>
   );
+  // The band badge. A discrete state, not a shade: it appears whenever the hero's band is a warning
+  // band, so the badge and the surface colour can never disagree. `isWarningBand` is keyed on the band
+  // rather than on alertEdges because AQI's 101–150 band is a warning colour below AQI's first alert
+  // edge. Its fill is the sky inverted (--sky-ink behind --sky), so it carries the band's own verified
+  // contrast pair and needs no new colour.
+  const alert = band !== null && isWarningBand(band) ? band : null;
+  // The hero's own heading — the verdict in Simple, the reading in Numbers — is the page's h1.
+  // Every other state (first run, loading, no reading, server down) still gets one, so the outline
+  // is never headless exactly when a new visitor arrives.
+  const heroHeading = message === null && metrics !== undefined && value !== undefined && ts !== null;
   return (
     <section className="sky" aria-label="Air quality now">
       <div className="sky-head">
@@ -115,12 +132,33 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
       </div>
       {children}
       <div className="sky-body">
-        {message !== null ? <><p className="quiet">{message}</p>{metrics !== undefined && <p className="hero-meta">{toggle}</p>}</>
+        {!heroHeading && <h1 className="sr-only">Singapore air quality</h1>}
+        {alert && <p className="sky-badge" role="status">{alert.label} air</p>}
+        {message !== null ? <>
+            {/* Offline: the card is the retry control, so recovery needs no second button. */}
+            {retryable && onRetry
+              ? <button type="button" className="quiet retry" onClick={onRetry}>{message}</button>
+              : <p className="quiet">{message}</p>}
+            {metrics !== undefined && <p className="hero-meta">{toggle}</p>}
+          </>
           : metrics === undefined || value === undefined || ts === null ? null
           : view === 'simple' ? <HeroSimple value={value} spec={spec} ts={ts} points={points} toggle={toggle} />
           : <HeroNumbers metrics={metrics} value={value} spec={spec} ts={ts} toggle={toggle} />}
         {/* The live region stays mounted so screen readers announce each new notice. */}
         <div role="status" aria-live="polite">{notice && <p className="quiet notice">{notice}</p>}</div>
+        {advice && <p className="sky-advice">{advice}</p>}
+        {/* The only way to be told the air turned, made findable from the page that exists to be watched. */}
+        {botUrl && (
+          <p className="sky-alerts">
+            <a href={botUrl} target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 2 11 13" />
+                <path d="M22 2 15 22 11 13 2 9 22 2z" />
+              </svg>
+              Get alerts on Telegram
+            </a>
+          </p>
+        )}
       </div>
     </section>
   );

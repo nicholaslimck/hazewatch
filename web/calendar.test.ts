@@ -1,5 +1,5 @@
 import { test } from 'node:test'; import assert from 'node:assert/strict';
-import { buildCells, monthLabels, WEEKS } from './calendar.ts';
+import { buildCells, defaultFocusIndex, isFocusable, monthLabels, stepFocus, WEEKS } from './calendar.ts';
 
 // 2026-10-06 is a Tuesday.
 const END = '2026-10-06';
@@ -48,4 +48,29 @@ test('no extra first-column label when a 1st is in column 0 or 1', () => {
   const labels = monthLabels(buildCells('2026-09-28', new Map()));
   assert.equal(labels[0].col, 0);
   assert.equal(labels.filter((l) => l.col === 0).length, 1);
+});
+
+test('isFocusable: only in-window days that carry a reading are keyboard-reachable', () => {
+  const cells = buildCells(END, new Map([['2026-10-02', 50]]));
+  assert.equal(isFocusable(cells.find((c) => c.date === '2026-10-02')!), true);
+  assert.equal(isFocusable(cells.find((c) => c.date === '2026-10-03')!), false); // in window, no reading
+  assert.equal(isFocusable(cells.find((c) => c.date === '2026-10-07')!), false); // padded, past the end
+});
+
+test('stepFocus walks past empty days and stops at the grid edge', () => {
+  const cells = buildCells(END, new Map([['2026-10-01', 80], [END, 120]])); // only two days carry a reading
+  const end = cells.findIndex((c) => c.date === END);
+  const first = cells.findIndex((c) => c.date === '2026-10-01');
+  assert.equal(stepFocus(cells, end, -1), first); // up a day skips the empty 2nd–5th
+  assert.equal(stepFocus(cells, end, 1), -1); // nothing focusable after the end date
+  assert.equal(stepFocus(cells, 0, -1), -1); // nothing before the padded start
+  assert.equal(stepFocus(cells, first, -7), -1); // a week earlier is still padded or empty
+});
+
+test('defaultFocusIndex: the end date when it has a reading, else the newest day that does', () => {
+  const withEnd = buildCells(END, new Map([[END, 120], ['2026-10-01', 80]]));
+  assert.equal(withEnd[defaultFocusIndex(withEnd, END)].date, END);
+  const older = buildCells(END, new Map([['2026-09-30', 90], ['2026-09-29', 70]]));
+  assert.equal(older[defaultFocusIndex(older, END)].date, '2026-09-30');
+  assert.equal(defaultFocusIndex(buildCells(END, new Map()), END), -1);
 });

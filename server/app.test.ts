@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
 import { openDb } from './db.ts';
-import { createApp } from './app.ts';
+import { createApp, httpUrlOrNull } from './app.ts';
 import { REGIONS } from '../shared/types.ts';
 import type { IngestState } from './ingest.ts';
 
@@ -97,11 +97,22 @@ test('static: sw.js is no-cache, manifest has its own type', async () => {
   assert.match(m.headers.get('content-type') ?? '', /application\/manifest\+json/);
 });
 
-test('GET /api/config returns publicUrl', async () => {
+test('GET /api/config returns publicUrl and botUrl', async () => {
   const { store, state } = mk();
-  for (const publicUrl of [null, 'https://haze.example']) {
-    const res = await createApp(store, state, undefined, { publicUrl }).request('/api/config');
-    assert.deepEqual(await res.json(), { publicUrl });
+  const configs = [
+    { publicUrl: null, botUrl: null },
+    { publicUrl: 'https://haze.example', botUrl: 'https://t.me/hazewatch_bot' },
+  ];
+  for (const config of configs) {
+    const res = await createApp(store, state, undefined, config).request('/api/config');
+    assert.deepEqual(await res.json(), config);
     assert.equal(res.headers.get('cache-control'), 'no-store');
   }
+});
+
+test('httpUrlOrNull keeps only absolute http(s) links', () => {
+  assert.equal(httpUrlOrNull('https://t.me/hazewatch_bot'), 'https://t.me/hazewatch_bot');
+  assert.equal(httpUrlOrNull('http://example.test/bot'), 'http://example.test/bot');
+  for (const bad of [undefined, null, '', 't.me/hazewatch_bot', 'javascript:alert(1)', 'ftp://x/y', 'not a url'])
+    assert.equal(httpUrlOrNull(bad), null, String(bad));
 });
