@@ -58,10 +58,11 @@ type Props = {
   band: PsiBand | null; message: string | null; notice?: string | null; locating?: boolean;
   metrics: Record<string, number> | undefined; ts: string | null; points: HistoryPoint[] | null;
   botUrl: string | null;
+  retryable?: boolean; onRetry?: () => void;
   children?: ReactNode;
 };
 
-export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, locating = false, metrics, ts, points, botUrl, children }: Props) {
+export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, locating = false, metrics, ts, points, botUrl, retryable = false, onRetry, children }: Props) {
   useSkyTokens(band);
   const spec = SCALES[scale];
   const value = metrics === undefined ? undefined : spec.value(metrics);
@@ -81,6 +82,11 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
       ))}
     </span>
   );
+  // The band badge. A discrete state, not a shade: it appears only once the reading crosses the
+  // scale's first alert edge (PSI 101 / AQI 151 — the same air on both scales, per spec.alertEdges),
+  // so "the warning is on" is legible without reading the number. Its fill is the sky inverted
+  // (--sky-ink behind --sky), so it always carries the band's own verified contrast pair.
+  const alert = band !== null && value !== undefined && value >= spec.alertEdges[0] ? band : null;
   // The hero's own heading — the verdict in Simple, the reading in Numbers — is the page's h1.
   // Every other state (first run, loading, no reading, server down) still gets one, so the outline
   // is never headless exactly when a new visitor arrives.
@@ -126,7 +132,14 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
       {children}
       <div className="sky-body">
         {!heroHeading && <h1 className="sr-only">Singapore air quality</h1>}
-        {message !== null ? <><p className="quiet">{message}</p>{metrics !== undefined && <p className="hero-meta">{toggle}</p>}</>
+        {alert && <p className="sky-badge" role="status">{alert.label} air</p>}
+        {message !== null ? <>
+            {/* Offline: the card is the retry control, so recovery needs no second button. */}
+            {retryable && onRetry
+              ? <button type="button" className="quiet retry" onClick={onRetry}>{message}</button>
+              : <p className="quiet">{message}</p>}
+            {metrics !== undefined && <p className="hero-meta">{toggle}</p>}
+          </>
           : metrics === undefined || value === undefined || ts === null ? null
           : view === 'simple' ? <HeroSimple value={value} spec={spec} ts={ts} points={points} toggle={toggle} />
           : <HeroNumbers metrics={metrics} value={value} spec={spec} ts={ts} toggle={toggle} />}

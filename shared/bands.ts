@@ -6,22 +6,25 @@ export type PsiBand = {
 };
 
 const NORMAL = 'Normal activities';
+// Colour ramp. Good/Moderate stay as they were; the three warning bands deepen and gain
+// saturation as the air worsens, so the sky itself closes in rather than only the words changing.
+// The bands sit far enough apart in luminance to read as steps (light theme L* 0.72 -> 0.55 -> 0.28 -> 0.08).
 const GOOD: PsiBand = { key: 'good', label: 'Good', advice: NORMAL, sensitiveNote: false,
   color: '#BFD9EE', onColor: '#1F3346', darkColor: '#1E3446', darkOnColor: '#D6E6F3', bar: '#7FAFD6', darkBar: '#4F7FA6' };
 const MODERATE: PsiBand = { key: 'moderate', label: 'Moderate', advice: NORMAL, sensitiveNote: false,
   color: '#D6DFD8', onColor: '#2E3A33', darkColor: '#2C3631', darkOnColor: '#DCE5DE', bar: '#A9B9AD', darkBar: '#6E8273' };
 const UNHEALTHY: PsiBand = { key: 'unhealthy', label: 'Unhealthy', advice: 'Reduce prolonged or strenuous outdoor physical exertion', sensitiveNote: true,
-  color: '#D9C9A0', onColor: '#3D2F12', darkColor: '#4A3F22', darkOnColor: '#EBDDB8', bar: '#C8A957', darkBar: '#B39550' };
+  color: '#D6C193', onColor: '#3A2C10', darkColor: '#4A3A12', darkOnColor: '#EDDFB6', bar: '#C8A957', darkBar: '#B39550' };
 const VERY_UNHEALTHY: PsiBand = { key: 'very_unhealthy', label: 'Very unhealthy', advice: 'Avoid prolonged or strenuous outdoor physical exertion', sensitiveNote: true,
-  color: '#C49A6C', onColor: '#3A2410', darkColor: '#4E3622', darkOnColor: '#EFD3B5', bar: '#B07A45', darkBar: '#B07A45' };
+  color: '#B98552', onColor: '#2A180A', darkColor: '#3A2610', darkOnColor: '#F3D9B4', bar: '#B07A45', darkBar: '#B07A45' };
 const HAZARDOUS: PsiBand = { key: 'hazardous', label: 'Hazardous', advice: 'Minimise outdoor activity', sensitiveNote: true,
-  color: '#86644F', onColor: '#FFF4EA', darkColor: '#3E2A22', darkOnColor: '#F3DCCF', bar: '#7A5240', darkBar: '#A0705A' };
+  color: '#6E4936', onColor: '#FFF4EA', darkColor: '#271812', darkOnColor: '#F6E1D6', bar: '#7A5240', darkBar: '#A0705A' };
 
 export const BANDS: readonly PsiBand[] = [GOOD, MODERATE, UNHEALTHY, VERY_UNHEALTHY, HAZARDOUS];
 
 // Sixth palette, between Very unhealthy and Hazardous. Only AQI uses it (its "Very unhealthy" band); PSI has no band here.
 export const SEVERE: PsiBand = { key: 'severe', label: 'Very unhealthy', advice: '', sensitiveNote: true,
-  color: '#A57F5D', onColor: '#2A180A', darkColor: '#5A3326', darkOnColor: '#F2D6C4', bar: '#9A5F3C', darkBar: '#B8683F' };
+  color: '#8A5C40', onColor: '#FFF3E8', darkColor: '#332014', darkOnColor: '#F6DCC8', bar: '#9A5F3C', darkBar: '#B8683F' };
 
 // Every palette that needs CSS tokens (--bar-*, --cell-*).
 export const PALETTES: readonly PsiBand[] = [...BANDS, SEVERE];
