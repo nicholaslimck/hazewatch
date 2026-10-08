@@ -158,7 +158,7 @@ export function App() {
         region={region} onRegion={choose} onLocate={locate} onShare={share} view={view} onView={chooseView}
         scale={scale} onScale={chooseScale} band={band} message={message} notice={notice} locating={locating} metrics={metrics} ts={now?.ts ?? null} points={pm25} botUrl={botUrl}
       >
-        {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner ts={now.ts} />}
+        {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner />}
         {needPicker && <RegionPicker onPick={choose} />}
       </Sky>
 

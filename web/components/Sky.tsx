@@ -65,9 +65,11 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
   useSkyTokens(band);
   const spec = SCALES[scale];
   const value = metrics === undefined ? undefined : spec.value(metrics);
-  // The band's advisory, sitting under the reading it explains. Bands with no advice of their own
-  // (AQI's Very unhealthy) would otherwise render a bare "advice: ." clause, so skip that part.
-  const advice = band && [band.advice && `${spec.source} advice: ${band.advice}.`, band.sensitiveNote && SENSITIVE_NOTE].filter(Boolean).join(' ');
+  // One advisory line, not three. The verdict above already says what to do, so a band's terse advice is
+  // dropped when the band carries its own sensitive-groups note (PSI >= Unhealthy) and the note stands in
+  // its place; AQI bands have no such note, so their advice — which IS the sensitive-groups guidance —
+  // stays. The "NEA advice:" / "US EPA advice:" prefix went with the duplicate.
+  const advice = band ? (band.sensitiveNote ? SENSITIVE_NOTE : band.advice || null) : null;
   // Stands in for the scale's name on the hero's meta line, so it sits on the number it changes.
   // Kept on screen when this scale has no reading so the user can switch back.
   const toggle = (
@@ -135,7 +137,7 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
         {botUrl && (
           <p className="sky-alerts">
             <a href={botUrl} target="_blank" rel="noopener noreferrer">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 2 11 13" />
                 <path d="M22 2 15 22 11 13 2 9 22 2z" />
               </svg>
