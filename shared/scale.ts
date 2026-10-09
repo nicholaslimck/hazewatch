@@ -1,4 +1,4 @@
-import { BANDS, psiBand, PSI_EDGES, PM25_1H_EDGES } from './bands.ts';
+import { BANDS, psiBand, PSI_EDGES, PM25_1H_EDGES, PM25_1H_NAMES } from './bands.ts';
 import type { PsiBand } from './bands.ts';
 import { aqiBand, aqiVerdict, pm25ToAqi, AQI_EDGES, AQI_PM25_EDGES, AQI_SEGMENTS } from './aqi.ts';
 import { bandPosition, SCALE, verdict } from './verdict.ts';
@@ -25,7 +25,6 @@ export type ScaleSpec = {
   alertEdges: number[]; // the scale values where alert levels 1, 2, 3 start, in the scale's own units
 };
 
-const PM25_1H_NAMES = ['Normal', 'Elevated', 'High', 'Very high']; // NEA's names for PM25_1H_EDGES bands
 const AQI_LEGEND: ScaleSpec['legend'] = [
   { key: 'good', label: 'Good' },
   { key: 'moderate', label: 'Moderate' },

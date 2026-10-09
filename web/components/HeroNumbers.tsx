@@ -58,12 +58,11 @@ export function HeroNumbers({ metrics, value, spec, ts, toggle }: { metrics: Rec
         <dt>{p.name}</dt>
         <dd>
           <span className="pol-big">{showIndex ? Math.round(big) : big}</span>
-          {isNowcast ? <>
-              <span className="pol-unit"> {p.unit} NowCast</span>
-              {lastHour !== undefined && <span className="pol-sub">{lastHour} {p.unit} last hour</span>}
-            </>
+          {isNowcast ? <span className="pol-unit"> {p.unit} NowCast</span>
             : !showIndex ? <span className="pol-unit"> {p.unit}</span>
             : conc !== undefined && <span className="pol-unit"> {conc} {p.unit}</span>}
+          {/* The last hour, on both scales. It is already fetched (pm25_one_hourly) and used to be AQI-only. */}
+          {p.key === 'pm25' && lastHour !== undefined && <span className="pol-sub">{lastHour} {p.unit} last hour</span>}
         </dd>
       </div>
     );

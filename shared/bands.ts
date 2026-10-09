@@ -36,6 +36,14 @@ export const SENSITIVE_NOTE = 'Elderly, children, pregnant women and people with
 // Band edges: the top of each band but the last (which is open-ended). Every threshold in the app derives from these.
 export const PSI_EDGES = [50, 100, 200, 300];
 export const PM25_1H_EDGES = [55, 150, 250]; // NEA's 1-hour PM2.5 bands: Normal, Elevated, High, Very high
+export const PM25_1H_NAMES = ['Normal', 'Elevated', 'High', 'Very high']; // NEA's names for those bands, lowest first
+// NEA's hourly PM2.5 edges mark where a band STARTS (55 is the bottom of Elevated), unlike PSI_EDGES,
+// which are band tops. So a value's band is the count of edges at or below it — the same start
+// semantics `lines()` uses to place the chart's "Elevated 55+" labels, so the two cannot disagree.
+export function pm25HourIndex(v: number): number { return PM25_1H_EDGES.filter((e) => v >= e).length; }
+export function pm25HourBand(v: number): string { return PM25_1H_NAMES[pm25HourIndex(v)]; }
+// The palette the app already fills map zones and calendar cells with, for that same band.
+export function pm25HourPalette(v: number): PsiBand { return BANDS[pm25HourIndex(v)]; }
 export const SCALE_TOP = 400; // where drawn scales stop; the open last band is treated as ending here
 export const scaleFraction = (v: number) => Math.min(Math.max(v, 0), SCALE_TOP) / SCALE_TOP; // 0–1 position on a drawn scale
 

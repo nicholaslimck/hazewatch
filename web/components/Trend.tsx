@@ -1,5 +1,6 @@
 import type { HistoryPoint } from '../api.ts';
 import { fmtHour } from '../../shared/format.ts';
+import { pm25HourBand, pm25HourPalette } from '../../shared/bands.ts';
 
 const HOUR = 3600_000;
 const WINDOW = 24 * HOUR;
@@ -44,7 +45,7 @@ export function Trend({ points, bandLines, caption }: { points: HistoryPoint[] |
   return (
     <section aria-labelledby="trend-title">
       <h2 id="trend-title">Last 24 hours</h2>
-      <p className="caption">Fine particles PM2.5, hourly, in µg/m³. Now {Math.round(last.value)}. {caption}</p>
+      <p className="caption">Fine particles PM2.5, hourly, in µg/m³. Now {Math.round(last.value)} — {pm25HourBand(last.value)}. {caption}</p>
       <div className="chart">
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Fine particles PM2.5 over the last 24 hours">
           {lines.map(({ v }) => (
@@ -70,6 +71,12 @@ export function Trend({ points, bandLines, caption }: { points: HistoryPoint[] |
       <div className="ticks" aria-hidden="true">
         {ticks.map((t, i) => <span key={i}>{t}</span>)}
       </div>
+      {/* The current band as a colour token, in the chart's own band vocabulary (NEA hourly PM2.5), so
+          it can never disagree with the dashed lines. The value is the caption's job — one fact, not two. */}
+      <p className="now-chip">
+        <span className="now-dot" style={{ background: pm25HourPalette(last.value).bar }} aria-hidden="true" />
+        {pm25HourBand(last.value)}
+      </p>
     </section>
   );
 }
