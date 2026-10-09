@@ -3,7 +3,7 @@ import { SCALES } from './scale.ts';
 
 test('chart lines derive from the band edges', () => {
   assert.deepEqual(SCALES.psi.trendLines, [{ v: 55, label: 'Elevated' }, { v: 150, label: 'High' }, { v: 250, label: 'Very high' }]);
-  assert.deepEqual(SCALES.aqi.trendLines, [{ v: 35.4, label: 'Sensitive groups' }, { v: 55.4, label: 'Unhealthy' }, { v: 125.4, label: 'Very unhealthy' }]);
+  assert.deepEqual(SCALES.aqi.trendLines, [{ v: 35.4, label: 'Unhealthy for sensitive groups' }, { v: 55.4, label: 'Unhealthy' }, { v: 125.4, label: 'Very unhealthy' }]);
 });
 
 test('each scale has one segment, legend entry and verdict tier per band', () => {
