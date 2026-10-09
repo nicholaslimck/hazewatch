@@ -181,7 +181,7 @@ A haze palette: two pale start-of-day surfaces, then four progressively deeper e
 **Display Font:** Bricolage Grotesque Variable (with system-ui, sans-serif)
 **Body Font:** Bricolage Grotesque Variable (with system-ui, sans-serif)
 
-**Character:** One variable grotesque across the whole product, humanist-soft at display size and plain at text size. `font-variant-numeric: tabular-nums` is set on `:root`, because every number in this product exists to be compared with another number. There is no second family and no mono; a mono would imply code where the content is measurement.
+**Character:** One variable grotesque across the whole product, humanist-soft at display size and plain at text size. `font-variant-numeric: tabular-nums` is set on `:root`, because every number in this product exists to be compared with another number. There is no second family and no mono; a mono would imply code where the content is measurement. Type sizes are fixed in `px` on purpose — the tabular layout and the type ramp assume a stable rhythm — so the page scales with browser zoom rather than the OS text-size preference; a deliberate exception, not an oversight.
 
 ### Hierarchy
 

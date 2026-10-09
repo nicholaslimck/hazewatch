@@ -29,6 +29,8 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; }
+/* Selection carries the palette rather than the browser's default blue — the cheapest signal the page was built. */
+::selection { background: var(--sky-ink); color: var(--bg); }
 h1, h2, p, ul, dl, dd { margin: 0; padding: 0; }
 ul { list-style: none; }
 h2 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
@@ -206,7 +208,7 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
   background: none; border: 0; border-radius: 0; padding: 0;
   font-size: 13px; line-height: 1.35;
 }
-.banner::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--bar-unhealthy, #C8A957); }
+.banner::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--bar-unhealthy, #9B7D28); }
 .picker-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .picker-options button {
   background: transparent; border: 1px solid var(--line); border-radius: 8px;

@@ -130,9 +130,11 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
           ))}
         </div>
       </div>
+      {/* The page's h1 leads the DOM in every heroless state, so the outline starts at level 1
+          (the picker's own h2 renders after it). */}
+      {!heroHeading && <h1 className="sr-only">Singapore air quality</h1>}
       {children}
       <div className="sky-body">
-        {!heroHeading && <h1 className="sr-only">Singapore air quality</h1>}
         {alert && <p className="sky-badge" role="status">{alert.label} air</p>}
         {message !== null ? <>
             {/* Offline: the card is the retry control, so recovery needs no second button. */}
