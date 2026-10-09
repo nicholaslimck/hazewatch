@@ -25,10 +25,10 @@ test('advice copy', () => {
 });
 test('sky colours per band', () => {
   const want: [number, string, string, string, string, string, string][] = [
-    [40, '#BFD9EE', '#1F3346', '#1E3446', '#D6E6F3', '#7FAFD6', '#4F7FA6'],
-    [80, '#D6DFD8', '#2E3A33', '#2C3631', '#DCE5DE', '#A9B9AD', '#6E8273'],
-    [150, '#D6C193', '#3A2C10', '#4A3A12', '#EDDFB6', '#C8A957', '#B39550'],
-    [250, '#B98552', '#2A180A', '#3A2610', '#F3D9B4', '#B07A45', '#B07A45'],
+    [40, '#BFD9EE', '#1F3346', '#1E3446', '#D6E6F3', '#5785AB', '#4F7FA6'],
+    [80, '#D6DFD8', '#2E3A33', '#2C3631', '#DCE5DE', '#768579', '#6E8273'],
+    [150, '#D6C193', '#3A2C10', '#4A3A12', '#EDDFB6', '#9B7D28', '#B39550'],
+    [250, '#B98552', '#2A180A', '#3A2610', '#F3D9B4', '#AB7641', '#B07A45'],
     [350, '#6E4936', '#FFF4EA', '#271812', '#F6E1D6', '#7A5240', '#A0705A'],
   ];
   for (const [v, color, onColor, darkColor, darkOnColor, bar, darkBar] of want) {
