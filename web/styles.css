@@ -170,7 +170,7 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .n-top .hero-meta { margin-top: 8px; }
 .gauge { display: block; flex: none; overflow: visible; }
 .psi-big { font-size: 64px; font-weight: 600; line-height: 0.9; }
-.pol { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 18px; }
+.pol { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 18px; align-items: start; }
 .pol-item { opacity: 0.85; }
 .pol-item.dominant { opacity: 1; font-weight: 600; }
 .pol dt { font-size: 12px; }
@@ -236,6 +236,16 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .chart svg { position: relative; z-index: 1; }
 .ref-label { position: absolute; left: 0; transform: translateY(-100%); padding-bottom: 1px; font-size: 12px; color: var(--muted); }
 .ticks { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--muted); }
+/* The chart's "now" chip: the current band as a colour token, quiet enough to read as a label rather
+   than a second alarm. The dot reuses a band shade the map and calendar already fill with; the text
+   stays on the muted pair. The value is the caption's job, so the chip carries the band only. */
+.now-chip {
+  display: inline-flex; align-items: center; gap: 6px; width: fit-content;
+  margin-top: 10px; padding: 2px 9px 2px 7px;
+  border: 1px solid var(--line); border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.now-dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 
 /* Last 90 days */
 .cal, .months { display: grid; grid-auto-columns: 1fr; gap: 3px; }

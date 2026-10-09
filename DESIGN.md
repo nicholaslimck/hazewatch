@@ -280,3 +280,7 @@ Two pills that report mode.
 - **Don't** put icon fonts, emoji or unicode glyphs in place of icons; icons are authored SVG on a consistent stroke.
 - **Don't** let a control's box fall under 24px without an `::after` pad to carry it there, and don't measure target size without counting that pad.
 - **Don't** wrap sections in cards, and never nest cards.
+
+### Refused
+
+- **A PM2.5 scale.** PSI and AQI are the only scales. PM2.5 is a pollutant rather than an index, so it stays a reading inside Numbers and the trend chart, never a third position on the scale switch. NEA's hourly PM2.5 bands sit on different edges from PSI's, so the same air can read Unhealthy on PSI and calmer on PM2.5. A scale that lets the sky look calm on a day PSI calls unhealthy is refused: it breaks the One Alarm Rule, and the screen must never understate the air.

@@ -1,5 +1,5 @@
 import { test } from 'node:test'; import assert from 'node:assert/strict';
-import { psiBand, trend, bandIndex, segments, PSI_EDGES, isWarningBand } from './bands.ts';
+import { psiBand, trend, bandIndex, segments, PSI_EDGES, isWarningBand, pm25HourBand, pm25HourPalette } from './bands.ts';
 import { aqiBand } from './aqi.ts';
 test('psi band edges', () => {
   const cases: [number, string][] = [[0,'good'],[50,'good'],[51,'moderate'],[100,'moderate'],[101,'unhealthy'],[200,'unhealthy'],[201,'very_unhealthy'],[300,'very_unhealthy'],[301,'hazardous']];
@@ -46,4 +46,15 @@ test('bandIndex and segments', () => {
 test('trend', () => {
   assert.equal(trend(70, 60), 'rising'); assert.equal(trend(50, 60), 'falling'); assert.equal(trend(65, 60), 'steady');
   assert.equal(trend(70, undefined), null); assert.equal(trend(undefined, 60), null);
+});
+// The caption's band name and the chip's colour both key on NEA's hourly PM2.5 edges, and those edges
+// are where a band STARTS — 55 is the bottom of Elevated, 150 the bottom of High. An off-by-one here
+// would name the air differently from the "Elevated 55+" line the caption sits under.
+test('pm25 hourly band name and palette', () => {
+  const names: [number, string][] = [[0,'Normal'],[54,'Normal'],[55,'Elevated'],[149,'Elevated'],[150,'High'],[249,'High'],[250,'Very high'],[400,'Very high']];
+  for (const [v, n] of names) assert.equal(pm25HourBand(v), n, `pm2.5 ${v}`);
+  assert.equal(pm25HourPalette(54).key, 'good');
+  assert.equal(pm25HourPalette(82).key, 'moderate');
+  assert.equal(pm25HourPalette(160).key, 'unhealthy');
+  assert.equal(pm25HourPalette(300).key, 'very_unhealthy');
 });
