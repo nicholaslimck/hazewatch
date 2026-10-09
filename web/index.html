@@ -4,8 +4,26 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#DDE3E6" />
+    <meta name="theme-color" content="#AFB9BF" />
     <title>HazeWatch</title>
+    <!-- Previews are static: a JS-only SPA can't serve a per-reading preview, so a shared link previews
+         the site. The origin is hard-coded because index.html is static — update these URLs if the
+         public domain ever changes (the same host serves /og.png). -->
+    <meta name="description" content="Singapore air quality in plain language: PSI and AQI for the five NEA regions, updated through the day." />
+    <link rel="canonical" href="https://hazewatch.limspot.org/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="HazeWatch" />
+    <meta property="og:title" content="HazeWatch — Singapore air quality" />
+    <meta property="og:description" content="PSI and AQI for Singapore's five regions, in plain language." />
+    <meta property="og:url" content="https://hazewatch.limspot.org/" />
+    <meta property="og:image" content="https://hazewatch.limspot.org/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="HazeWatch — Singapore air quality" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="HazeWatch — Singapore air quality" />
+    <meta name="twitter:description" content="PSI and AQI for Singapore's five regions, in plain language." />
+    <meta name="twitter:image" content="https://hazewatch.limspot.org/og.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -28,7 +28,7 @@ export type ScaleSpec = {
 const AQI_LEGEND: ScaleSpec['legend'] = [
   { key: 'good', label: 'Good' },
   { key: 'moderate', label: 'Moderate' },
-  { key: 'unhealthy', label: 'Sensitive groups' },
+  { key: 'unhealthy', label: 'Unhealthy for sensitive groups' },
   { key: 'very_unhealthy', label: 'Unhealthy' },
   { key: 'severe', label: 'Very unhealthy' },
   { key: 'hazardous', label: 'Hazardous' },

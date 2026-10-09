@@ -15,6 +15,7 @@ import { StaleBanner } from './components/StaleBanner.tsx';
 import { RegionPicker } from './components/RegionPicker.tsx';
 import { makeCardFile, shareFile, shareText } from './share.ts';
 import { deepLink, readState, writeSearch } from './url.ts';
+import { pageTitle } from './title.ts';
 
 const REFRESH_MS = 10 * 60 * 1000;
 
@@ -152,6 +153,9 @@ export function App() {
   const metrics = now !== null && now.ts !== null && region !== null ? now.regions[region] : undefined;
   const value = metrics === undefined ? undefined : spec.value(metrics);
   const band = value === undefined ? null : spec.band(Math.round(value));
+
+  // The tab/window title names the current reading — the number is what a tab strip shows.
+  useEffect(() => { document.title = pageTitle(region, spec.name, value); }, [region, spec.name, value]);
 
   // Card is pre-rendered so the tap can call navigator.share with no await (iOS Safari drops the gesture otherwise).
   const cardKey = region === null || now?.ts == null || value === undefined ? null : `${region}|${scale}|${Math.round(value)}|${now.ts}`;
