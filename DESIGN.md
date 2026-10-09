@@ -19,12 +19,17 @@ colors:
   ink-on-deep-haze: "#2A180A"
   ink-on-smoke-umber: "#FFF4EA"
   ink-on-burnt-haze: "#FFF3E8"
-  daylight-blue: "#7FAFD6"
-  sage: "#A9B9AD"
-  ochre: "#C8A957"
-  clay: "#B07A45"
+  daylight-blue: "#5785AB"
+  sage: "#768579"
+  ochre: "#9B7D28"
+  clay: "#AB7641"
   peat: "#7A5240"
   burnt-clay: "#9A5F3C"
+  surface-dark: "#15191C"
+  wet-slate-dark: "#E6EBEE"
+  rain-grey-dark: "#8E9AA1"
+  fog-line-dark: "#2A3136"
+  overcast-dark: "#3A4249"
 typography:
   display:
     fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
@@ -37,21 +42,42 @@ typography:
     fontSize: "64px"
     fontWeight: 600
     lineHeight: 0.9
+  stat:
+    fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
+    fontSize: "20px"
+    fontWeight: 600
+    lineHeight: 1.2
   title:
     fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
     fontSize: "18px"
     fontWeight: 600
+  meta:
+    fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 400
+    lineHeight: 1.45
   body:
     fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
     fontSize: "15px"
     fontWeight: 400
     lineHeight: 1.45
+  advice:
+    fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+    lineHeight: 1.45
+  small:
+    fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.35
   label:
     fontFamily: "Bricolage Grotesque Variable, system-ui, sans-serif"
     fontSize: "12px"
     fontWeight: 600
     letterSpacing: "0.06em"
 rounded:
+  dot: "2px"
   track: "3px"
   cell: "4px"
   row: "6px"
@@ -129,7 +155,7 @@ A haze palette: two pale start-of-day surfaces, then four progressively deeper e
 
 ### Secondary
 
-- **Daylight Blue / Sage / Ochre / Clay / Peat / Burnt Clay** (#7FAFD6 · #A9B9AD · #C8A957 · #B07A45 · #7A5240 · #9A5F3C): the deeper per-band shades used for the map zones, the region bars and the 90-day calendar cells — every surface where the sky tone would be too soft at small size. They map one-to-one to the six skies.
+- **Daylight Blue / Sage / Ochre / Clay / Peat / Burnt Clay** (#5785AB · #768579 · #9B7D28 · #AB7641 · #7A5240 · #9A5F3C): the deeper per-band shades used for the map zones, the region bars and the 90-day calendar cells — every surface where the sky tone would be too soft at small size. They map one-to-one to the six skies. Each is deepened enough to clear **3:1 against the Fog Line track** it sits on (they were 1.58–1.84:1, invisible at the pale end), so the at-a-glance comparison the bars exist for survives low vision — hue held, lightness dropped.
 
 ### Neutral
 
@@ -138,6 +164,7 @@ A haze palette: two pale start-of-day surfaces, then four progressively deeper e
 - **Rain Grey** (#5E6A71): captions, legends, secondary text.
 - **Fog Line** (#DDE3E6): hairlines and the region-bar tracks.
 - **Overcast** (#AFB9BF): the **no-band** sky — the surface shown before any reading is known.
+- **Surface Dark / Ink Dark / Rain Grey Dark / Line Dark / Overcast Dark** (#15191C · #E6EBEE · #8E9AA1 · #2A3136 · #3A4249): the dark-scheme neutral set — page ground, ink, secondary text, hairlines and the no-band sky. Dark mode is a composed second palette, not an inversion; the six band skies are re-cut as deep grounds and carry their own verified ink pairs (see the sidecar).
 
 ### Named Rules
 
@@ -147,22 +174,26 @@ A haze palette: two pale start-of-day surfaces, then four progressively deeper e
 
 **The Darker-Than-Good Rule.** The no-band Overcast surface must stay clearly darker than Clear Day (0.48 vs 0.67 luminance, measured as relative luminance). "We don't know yet" must never read as "the air is fine". Never lighten it toward Good.
 
+**The Marks-Clear-Three Rule.** A mark that encodes a value on a track — the region-bar and calendar fills — clears **3:1 against the track it sits on**, not merely against the page. A pale fill that vanishes into its own track has stopped being a mark.
+
 ## Typography
 
 **Display Font:** Bricolage Grotesque Variable (with system-ui, sans-serif)
 **Body Font:** Bricolage Grotesque Variable (with system-ui, sans-serif)
 
-**Character:** One variable grotesque across the whole product, humanist-soft at display size and plain at text size. `font-variant-numeric: tabular-nums` is set on `:root`, because every number in this product exists to be compared with another number. There is no second family and no mono; a mono would imply code where the content is measurement.
+**Character:** One variable grotesque across the whole product, humanist-soft at display size and plain at text size. `font-variant-numeric: tabular-nums` is set on `:root`, because every number in this product exists to be compared with another number. There is no second family and no mono; a mono would imply code where the content is measurement. Type sizes are fixed in `px` on purpose — the tabular layout and the type ramp assume a stable rhythm — so the page scales with browser zoom rather than the OS text-size preference; a deliberate exception, not an oversight.
 
 ### Hierarchy
 
 - **Display** (600, clamp 36→40px, 1.08, −0.01em): the verdict in Simple view — "Hazy. Skip the long run today." This is the page's `h1` and its largest text on mobile.
 - **Headline** (600, 64px, 0.9): the reading in Numbers view, set beside a vertical band gauge.
-- **Title** (600, 18px): the section headings — "Around Singapore", "Last 24 hours", "Last 90 days". Must stay clearly above body size; these four headings carry the page's scan structure.
-- **Body** (400, 15px, 1.45): captions of record, advice copy, region rows, pollutant rows.
-- **Label** (600, 12px, 0.06em, uppercase): group headings ("Particles", "Gases"), legends, footer, the "Sub-index, then concentration" caption.
-
-Hero meta text runs at 17px — the number, its band name and the scale switch, sitting directly under the verdict.
+- **Stat** (600, 20px, 1.2): the pollutant concentration in a Numbers row — the large figure in a dense line.
+- **Title** (600, 18px): the section headings — "Around Singapore", "Last 24 hours", "Last 90 days". Must stay clearly above body size; these headings carry the page's scan structure.
+- **Meta** (400, 17px, 1.45): the hero's number line — the reading, its band name and the scale switch, sitting directly under the verdict.
+- **Body** (400, 15px, 1.45): the base text size (`:root`).
+- **Advice** (400, 14px, 1.45): the sky's single advisory sentence, capped at 68ch.
+- **Small** (400, 13px, 1.35): captions, region rows, the footer, and the badge and toggle segments — the floor of the scale.
+- **Label** (600, 12px, 0.06em, uppercase): group headings ("Particles", "Gases"), legends, chart reference labels.
 
 ### Named Rules
 
@@ -186,7 +217,7 @@ Base unit 8px. The page is a two-column split on desktop and a single column bel
 
 **No shadows. At all.** There is no `box-shadow` vocabulary in this system; depth is entirely tonal. Hierarchy comes from the sky's colour depth, from Fog Line hairlines between sections, and from whitespace. The one apparent exception is the calendar's selected day, which uses an inset `box-shadow` purely as a 2px ring — an outline drawn with a shadow, not a lift.
 
-Dark mode is a genuine second palette rather than a filter: surfaces go to #15191C and the six sky tones are re-cut as deep, desaturated grounds, each keeping its own verified ink pair.
+Dark mode is a genuine second palette rather than a filter: surfaces go to Surface Dark (#15191C) and the six sky tones are re-cut as deep, desaturated grounds, each keeping its own verified ink pair.
 
 ### Named Rules
 
@@ -200,6 +231,7 @@ The form language is soft rectangles with one pill:
 - **Cards (8px)** are for the two message surfaces — the quiet card and the region picker. Nothing else is a card.
 - **Rows (6px)** and **cells (4px)** take progressively tighter corners as they get smaller and denser.
 - **Tracks (3px)** — the region-bar and scale-bar tracks — are near-square so they read as measurement, not as buttons.
+- **Dots (2px)** — the legend swatch and the "now" dot — the smallest step of the radius scale.
 
 Borders are 1px hairlines in Fog Line, never coloured. Icons are authored SVG at a consistent 2px stroke, never an icon font and never a unicode glyph.
 
@@ -233,8 +265,8 @@ Two pills that report mode.
 
 ### Region map & rows
 
-- **Map first.** Five hand-built SVG zones coloured by band shade, each a focusable `role="button"` with an authored 2px stroke; selection and keyboard focus are non-interactive overlays drawn after every zone.
-- **Rows second,** compact: a ranked list under the map, 40px minimum height, a 6px track, and a band-shade fill on a domain that **starts and ends on a band edge** so the five regions are actually comparable. Band edges inside that domain are drawn as 1px ticks, and the caption states the range.
+- **Map first.** Five hand-built SVG zones coloured by the band's marks shade (Secondary), each a focusable `role="button"` with an authored 2px stroke; selection and keyboard focus are non-interactive overlays drawn after every zone.
+- **Rows second,** compact: a ranked list under the map, 40px minimum height, a 6px track, and a band marks-shade fill on a domain that **starts and ends on a band edge** so the five regions are actually comparable. The fill clears 3:1 against the track (Marks-Clear-Three Rule); band edges inside the domain are drawn as 1px ticks, and the caption states the range.
 
 ### Numbers: gauge & pollutant grid
 
@@ -243,13 +275,13 @@ Two pills that report mode.
 
 ### Calendar
 
-- 90 daily cells, 4px radius, filled with the band shade, one tab stop for the whole grid with arrow-key movement (Home/End jump to the ends).
+- 90 daily cells, 4px radius, filled with the band marks shade, one tab stop for the whole grid with arrow-key movement (Home/End jump to the ends).
 - The current day carries an outer 2px ring; the selected day an inner ring, so the three states stay distinct.
 - A band legend sits beneath, because the cells encode by colour.
 
 ### Trend chart
 
-- 24-hour PM2.5 line, gaps preserved as gaps, band start lines dashed and labelled, ticks below the plot so a label never covers the data.
+- 24-hour PM2.5 line, gaps preserved as gaps, band start lines dashed in Rain Grey and labelled, ticks below the plot so a label never covers the data.
 
 ### Named Rules
 
@@ -263,10 +295,11 @@ Two pills that report mode.
 
 - **Do** keep the badge and the sky colour in agreement by keying the badge on the band (`isWarningBand`), not on the alert edge.
 - **Do** re-check the ink/surface contrast pair when any band colour changes; the floor is 4.63:1 and most pairs run 7–10:1.
+- **Do** keep a value-encoding mark at least 3:1 against the track it sits on, not just the page.
 - **Do** keep the neutral no-band sky darker than the Good band.
 - **Do** state the scale's real range in place when bars are drawn on a narrowed domain ("The bars share one scale, 100–200").
 - **Do** name the action and the recovery in errors: "Can't reach the server right now. Last update 2:00 pm. Tap to retry."
-- **Do** render an `h1` in every state, even when it has to be `sr-only`.
+- **Do** render an `h1` in every state, even when it has to be `sr-only`, and keep it first in the DOM so the outline starts at level 1.
 - **Do** keep every state honest and distinct: unknown, no reading, stale (>120 min) and offline are four different screens.
 - **Do** use tabular numerals for every figure.
 
@@ -280,6 +313,7 @@ Two pills that report mode.
 - **Don't** put icon fonts, emoji or unicode glyphs in place of icons; icons are authored SVG on a consistent stroke.
 - **Don't** let a control's box fall under 24px without an `::after` pad to carry it there, and don't measure target size without counting that pad.
 - **Don't** wrap sections in cards, and never nest cards.
+- **Don't** let a fill and its track end up within 3:1 of each other.
 
 ### Refused
 

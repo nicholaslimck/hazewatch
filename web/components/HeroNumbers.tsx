@@ -83,7 +83,7 @@ export function HeroNumbers({ metrics, value, spec, ts, toggle }: { metrics: Rec
         if (rows.length === 0) return null;
         return (
           <div className="pol-group" key={g.key}>
-            <p className="pol-head2">{g.label}</p>
+            <h2 className="pol-head2">{g.label}</h2>
             <dl className="pol">{rows}</dl>
           </div>
         );
