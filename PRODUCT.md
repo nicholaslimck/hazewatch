@@ -41,7 +41,8 @@ Two mechanisms a neighbouring dashboard could not copy truthfully:
 
 Confirmed:
 
-- Region, scale and view persist in `localStorage`. No accounts, no tracking, no server-side user data.
+- Region, scale and view are reflected in the URL and persist in `localStorage`, so a view can be
+  bookmarked or shared as a link. No accounts, no tracking, no server-side user data.
 - Read-only against NEA; the app never writes upstream.
 - One page, no routing — everything is reachable by scrolling.
 - Alert levels start at PSI 100/200/300 and AQI 150/200/300, chosen so both scales warn on the same air.

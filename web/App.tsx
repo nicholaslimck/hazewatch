@@ -14,6 +14,7 @@ import { Calendar } from './components/Calendar.tsx';
 import { StaleBanner } from './components/StaleBanner.tsx';
 import { RegionPicker } from './components/RegionPicker.tsx';
 import { makeCardFile, shareFile, shareText } from './share.ts';
+import { deepLink, readState, writeSearch } from './url.ts';
 
 const REFRESH_MS = 10 * 60 * 1000;
 
@@ -38,7 +39,10 @@ function loadScale(): Scale {
 }
 
 export function App() {
-  const [region, setRegion] = useState<Region | null>(loadSavedRegion);
+  // A link (a bookmark, or one a friend shared) wins over what this device last saved; the saved
+  // prefs win over the defaults. Read once, on the first render.
+  const initial = readState(window.location.search);
+  const [region, setRegion] = useState<Region | null>(() => initial.region ?? loadSavedRegion());
   const [needPicker, setNeedPicker] = useState(false);
   const [data, setData] = useState<{ now: NowResponse } | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -47,8 +51,8 @@ export function App() {
   const [lastGoodTs, setLastGoodTs] = useState<string | null>(null);
   // Consecutive failed fetches; each one lengthens the retry delay until the server answers.
   const [failStreak, setFailStreak] = useState(0);
-  const [view, setView] = useState<View>(loadView);
-  const [scale, setScale] = useState<Scale>(loadScale);
+  const [view, setView] = useState<View>(() => initial.view ?? loadView());
+  const [scale, setScale] = useState<Scale>(() => initial.scale ?? loadScale());
   const spec = SCALES[scale];
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
   const [botUrl, setBotUrl] = useState<string | null>(null);
@@ -135,6 +139,13 @@ export function App() {
     return () => clearTimeout(id);
   }, [loadFailed, failStreak, tick]);
 
+  // The address bar always reflects the current view, so it can be copied or bookmarked at any
+  // moment. replaceState, not push: this is not a navigation the back button should step through.
+  useEffect(() => {
+    const search = writeSearch({ region, view, scale });
+    if (search !== window.location.search) window.history.replaceState(null, '', `${window.location.pathname}${search}`);
+  }, [region, view, scale]);
+
   const now = data?.now ?? null;
   // From ts, not server ageMinutes, so a cached offline response shows its real age.
   const ageMinutes = data && data.now.ts !== null ? (Date.now() - Date.parse(data.now.ts)) / 60_000 : null;
@@ -159,7 +170,8 @@ export function App() {
     const v = Math.round(value);
     try {
       const file = card.current?.key === cardKey ? card.current.file : await makeCardFile({ spec, region, value: v, ts: now.ts });
-      await shareFile(file, shareText(spec, region, v), publicUrl);
+      // The link reproduces the region/scale/view being shared, not just the site root.
+      await shareFile(file, shareText(spec, region, v), deepLink(publicUrl, { region, view, scale }));
     } catch {
       flash("Couldn't share. Try again.");
     }

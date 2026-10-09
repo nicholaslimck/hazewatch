@@ -24,10 +24,10 @@ export const makeCardFile = async (o: CardOpts) =>
 
 // Link goes in the text: iOS drops the files when url is passed too.
 // No await before navigator.share: keeps the tap's user gesture alive on iOS Safari.
-export async function shareFile(file: File, text: string, publicUrl: string | null): Promise<'shared' | 'downloaded' | 'cancelled'> {
+export async function shareFile(file: File, text: string, link: string | null): Promise<'shared' | 'downloaded' | 'cancelled'> {
   if (shareMode(navigator, file) === 'files') {
     try {
-      await navigator.share({ files: [file], text: publicUrl ? `${text} ${publicUrl}` : text });
+      await navigator.share({ files: [file], text: link ? `${text} ${link}` : text });
       return 'shared';
     } catch (e) {
       if (isCancel(e)) return 'cancelled';
