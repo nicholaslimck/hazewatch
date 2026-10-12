@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Region } from '../shared/types.ts';
 import { nearestRegion, parseSavedRegion } from '../shared/regions.ts';
-import { regionName, fmtTime } from '../shared/format.ts';
+import { regionName, fmtWhen } from '../shared/format.ts';
 import { SCALES } from '../shared/scale.ts';
 import type { Scale } from '../shared/scale.ts';
 import { getConfig, getNow, useHistory } from './api.ts';
@@ -147,9 +147,26 @@ export function App() {
     if (search !== window.location.search) window.history.replaceState(null, '', `${window.location.pathname}${search}`);
   }, [region, view, scale]);
 
+  // Going offline or back online refetches at once, so the screen says so without waiting for the timer.
+  useEffect(() => {
+    const refetch = () => setTick((t) => t + 1);
+    window.addEventListener('online', refetch);
+    window.addEventListener('offline', refetch);
+    return () => { window.removeEventListener('online', refetch); window.removeEventListener('offline', refetch); };
+  }, []);
+
   const now = data?.now ?? null;
   // From ts, not server ageMinutes, so a cached offline response shows its real age.
   const ageMinutes = data && data.now.ts !== null ? (Date.now() - Date.parse(data.now.ts)) / 60_000 : null;
+  // A reading is on screen but can't be vouched for as current: the server didn't answer (including
+  // when the service worker answered from its cache instead), or NEA hasn't published in over two hours.
+  const shownTs = now?.ts ?? null;
+  const offline = shownTs !== null && (loadFailed || now?.fromCache === true);
+  const stale = shownTs !== null && ageMinutes !== null && ageMinutes > 120;
+  const doubt = shownTs === null ? null
+    : offline ? `Can't reach the server. Showing the ${fmtWhen(shownTs)} reading.`
+    : stale ? `No newer reading for over 2 hours. Showing ${fmtWhen(shownTs)}.`
+    : null;
   const metrics = now !== null && now.ts !== null && region !== null ? now.regions[region] : undefined;
   const value = metrics === undefined ? undefined : spec.value(metrics);
   const band = value === undefined ? null : spec.band(Math.round(value));
@@ -184,7 +201,7 @@ export function App() {
   const retryable = now === null && loadFailed;
   const message = now === null
     ? (loadFailed
-      ? `Can't reach the server right now.${lastGoodTs !== null ? ` Last update ${fmtTime(lastGoodTs)}.` : ''} Tap to retry.`
+      ? `Can't reach the server right now.${lastGoodTs !== null ? ` Last update ${fmtWhen(lastGoodTs)}.` : ''} Tap to retry.`
       : 'Loading…')
     : now.ts === null ? 'Waiting for first data from NEA'
     : region === null ? (needPicker ? null : 'Finding your region…')
@@ -196,9 +213,10 @@ export function App() {
       <Sky
         region={region} onRegion={choose} onLocate={locate} onShare={share} view={view} onView={chooseView}
         scale={scale} onScale={chooseScale} band={band} message={message} notice={notice} locating={locating} metrics={metrics} ts={now?.ts ?? null} points={pm25} botUrl={botUrl}
-        retryable={retryable} onRetry={() => setTick((t) => t + 1)}
+        retryable={retryable} onRetry={() => setTick((t) => t + 1)} drained={doubt !== null}
       >
-        {now !== null && now.ts !== null && ageMinutes !== null && ageMinutes > 120 && <StaleBanner />}
+        {/* Stays mounted so screen readers announce the line when it appears. */}
+        <div role="status">{doubt && <StaleBanner text={doubt} onRetry={offline ? () => setTick((t) => t + 1) : undefined} />}</div>
         {needPicker && <RegionPicker onPick={choose} />}
       </Sky>
 

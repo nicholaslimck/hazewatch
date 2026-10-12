@@ -191,7 +191,7 @@ A haze palette: two pale start-of-day surfaces, then four progressively deeper e
 - **Title** (600, 18px): the section headings — "Around Singapore", "Last 24 hours", "Last 90 days". Must stay clearly above body size; these headings carry the page's scan structure.
 - **Meta** (400, 17px, 1.45): the hero's number line — the reading, its band name and the scale switch, sitting directly under the verdict.
 - **Body** (400, 15px, 1.45): the base text size (`:root`).
-- **Advice** (400, 14px, 1.45): the sky's single advisory sentence, capped at 68ch.
+- **Advice** (400, 14px, 1.45): the sky's single advisory sentence, capped at 68ch. In Simple view, when the band carries the sensitive-groups note, it moves directly under the verdict at 500, 17px, 1.4, capped at 40ch (`.verdict-advice`) — for that audience it is the verdict.
 - **Small** (400, 13px, 1.35): captions, region rows, the footer, and the badge and toggle segments — the floor of the scale.
 - **Label** (600, 12px, 0.06em, uppercase): group headings ("Particles", "Gases"), legends, chart reference labels.
 
@@ -300,13 +300,13 @@ Two pills that report mode.
 - **Do** state the scale's real range in place when bars are drawn on a narrowed domain ("The bars share one scale, 100–200").
 - **Do** name the action and the recovery in errors: "Can't reach the server right now. Last update 2:00 pm. Tap to retry."
 - **Do** render an `h1` in every state, even when it has to be `sr-only`, and keep it first in the DOM so the outline starts at level 1.
-- **Do** keep every state honest and distinct: unknown, no reading, stale (>120 min) and offline are four different screens.
+- **Do** keep every state honest and distinct: unknown, no reading, stale (>120 min) and offline are four different screens. Stale, and offline with a reading still on screen, **drain the sky** (`.sky.drained`: 35% band mixed into Overcast, neutral ink) and add one line above the verdict saying why and when ("Sun 9:00 pm" once the reading is from another day). Offline, that line is the retry control.
 - **Do** use tabular numerals for every figure.
 
 ### Don't:
 
 - **Don't** introduce a traffic-light red/orange/green, or a new colour for a new severity state.
-- **Don't** use a coloured `border-left` or `border-right` above 1px on any card, row or alert — the stale banner is one line of text and a 6px dot for exactly this reason.
+- **Don't** use a coloured `border-left` or `border-right` above 1px on any card, row or alert — the stale banner is one line of text and a 7px dot for exactly this reason.
 - **Don't** add shadows, glows, gradients or glass; depth is tonal.
 - **Don't** centre or bottom-anchor the hero in the sky's leftover height.
 - **Don't** add a kicker or eyebrow above a heading.

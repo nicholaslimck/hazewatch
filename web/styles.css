@@ -7,6 +7,7 @@
      never reads as "the air is fine" — lightness alone separates them, colour vision aside.
      App sets --sky, --sky-ink, --bar-*, --cell-* inline once a band is known. */
   --sky: #AFB9BF;
+  --overcast: #AFB9BF; /* the no-band sky, kept by name so a drained sky can mix toward it */
   --sky-ink: var(--ink);
   font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
@@ -24,6 +25,7 @@
     --muted: #8E9AA1;
     --line: #2A3136;
     --sky: #3A4249;
+    --overcast: #3A4249;
   }
 }
 
@@ -91,6 +93,14 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
   .sky { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 24px 32px 32px; }
 }
 @media (prefers-reduced-motion: reduce) { .sky { transition: none; } }
+/* Stale or offline: the sky drains toward Overcast (35% band) and takes the neutral ink, so an old
+   reading stops looking like the air outside. Neutral ink clears 5.2:1 on every drained band, both
+   schemes; the band's own ink does not (light Hazardous/Severe drop to ~3:1). Children inherit both. */
+.sky.drained {
+  --sky: color-mix(in srgb, var(--sky-band, var(--overcast)) 35%, var(--overcast));
+  --sky-ink: var(--ink);
+}
+.sky.drained :is(.pol-item, .pol-head) { opacity: 1; }
 .sky-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 /* The band's advisory sits under the reading it explains. No auto margin on the body: the sky's
    remaining height falls below the content, not above it, so the verdict is not pushed down. */
@@ -150,6 +160,8 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .verdict { font-size: 36px; font-weight: 600; line-height: 1.08; letter-spacing: -0.01em; }
 @media (min-width: 900px) { .verdict { font-size: 40px; } }
 .hero-meta { font-size: 17px; margin-top: 12px; }
+/* The sensitive-groups advice, set as the verdict's second voice rather than a footnote. */
+.verdict-advice { font-size: 17px; font-weight: 500; line-height: 1.4; margin-top: 12px; max-width: 40ch; }
 .hero-foot { font-size: 15px; margin-top: 12px; }
 .small { font-size: 13px; }
 .scale { display: block; overflow: visible; }
@@ -201,14 +213,20 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .quiet.retry { display: block; width: 100%; text-align: left; cursor: pointer; }
 .quiet.retry:hover { background: color-mix(in srgb, var(--ink) 6%, var(--bg)); }
 .quiet.retry:active { background: color-mix(in srgb, var(--ink) 12%, var(--bg)); }
-/* Stale data: a one-line note in the sky's own ink, not a card. It sits above the verdict, so it must
-   not out-shout it; the amber dot keeps the status colour without the card's weight. */
+/* Stale or offline: one line in the sky's own ink above the verdict. The drained sky carries the
+   weight, so the line stays text and a dot rather than a card. */
 .banner {
-  display: flex; align-items: center; gap: 7px;
-  background: none; border: 0; border-radius: 0; padding: 0;
-  font-size: 13px; line-height: 1.35;
+  display: flex; align-items: flex-start; gap: 8px;
+  background: none; border: 0; border-radius: 0; padding: 0; color: inherit;
+  font-size: 15px; line-height: 1.35;
 }
-.banner::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--bar-unhealthy, #9B7D28); }
+/* Centred on the first line (15px × 1.35 ≈ 20px), so a wrapped line keeps the dot at its start. */
+.banner::before { content: ''; flex: none; width: 7px; height: 7px; margin-top: 6.5px; border-radius: 50%; background: currentColor; }
+button.banner { padding-top: 12px; }
+/* Offline: the line is the retry control. */
+button.banner { min-height: 44px; width: 100%; text-align: left; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+/* Under the offline card (server down on first run), the picker needs its own gap. */
+.sky-body .picker { margin-top: 12px; }
 .picker-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .picker-options button {
   background: transparent; border: 1px solid var(--line); border-radius: 8px;

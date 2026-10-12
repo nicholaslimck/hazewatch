@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { scaleFraction, SCALE_TOP, trend } from '../../shared/bands.ts';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import type { HistoryPoint } from '../api.ts';
-import { fmtHour, fmtTime } from '../../shared/format.ts';
+import { fmtHour, fmtWhen } from '../../shared/format.ts';
 
 const HOUR = 3600_000;
 const pct = (v: number) => `${scaleFraction(v) * 100}%`;
@@ -88,16 +88,18 @@ function ScaleBar({ v, spec }: { v: number; spec: ScaleSpec }) {
   );
 }
 
-export function HeroSimple({ value, spec, ts, points, toggle }: { value: number; spec: ScaleSpec; ts: string; points: HistoryPoint[] | null; toggle: ReactNode }) {
+export function HeroSimple({ value, spec, ts, points, toggle, advice }: { value: number; spec: ScaleSpec; ts: string; points: HistoryPoint[] | null; toggle: ReactNode; advice: string | null }) {
   const v = Math.round(value);
   const [line1, line2] = spec.verdict(v);
   const sentence = trendSentence(points);
   return (
     <div className="hero">
       <h1 className="verdict">{line1}<br />{line2}</h1>
+      {/* Straight under the verdict: for sensitive groups this line is the verdict. */}
+      {advice && <p className="verdict-advice">{advice}</p>}
       <p className="hero-meta">{toggle} {v}, {spec.position(v)} of {spec.band(v).label.toLowerCase()}</p>
       <ScaleBar v={v} spec={spec} />
-      <p className="hero-foot">{sentence ? `${sentence}, updated ${fmtTime(ts)}` : `Updated ${fmtTime(ts)}`}</p>
+      <p className="hero-foot">{sentence ? `${sentence}, updated ${fmtWhen(ts)}` : `Updated ${fmtWhen(ts)}`}</p>
     </div>
   );
 }

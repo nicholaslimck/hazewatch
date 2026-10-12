@@ -13,4 +13,8 @@ export const fmtHour = (ts: string) => hourFmt.format(Date.parse(ts)).replace(/\
 export const fmtDay = (date: string) => dayFmt.format(Date.parse(date)).replace(',', ''); // "Mon 6 Oct"
 export const fmtMonth = (date: string) => monthFmt.format(Date.parse(date)); // "Oct"
 export const todaySgt = () => sgtDateFmt.format(Date.now()); // "2026-10-06"
+const weekdayFmt = new Intl.DateTimeFormat('en-SG', { timeZone: TZ, weekday: 'short' });
+// "6:00 pm" today (SGT), "Sun 6:00 pm" otherwise, so an old reading never passes for this evening's.
+export const fmtWhen = (ts: string, now = Date.now()) =>
+  sgtDateFmt.format(Date.parse(ts)) === sgtDateFmt.format(now) ? fmtTime(ts) : `${weekdayFmt.format(Date.parse(ts))} ${fmtTime(ts)}`;
 export const regionName = (r: Region) => r[0].toUpperCase() + r.slice(1);

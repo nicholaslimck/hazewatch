@@ -28,7 +28,11 @@ function usePrefersDark(): boolean {
 }
 
 // Sky colours follow the selected region's band; bar and calendar colours follow the scheme only.
-function useSkyTokens(band: PsiBand | null) {
+// The drained sky's colour for the status bar, matching .sky.drained's color-mix in styles.css.
+const mixHex = (a: string, b: string, p: number) =>
+  `rgb(${[1, 3, 5].map((i) => Math.round(parseInt(a.slice(i, i + 2), 16) * p + parseInt(b.slice(i, i + 2), 16) * (1 - p))).join(' ')})`;
+
+function useSkyTokens(band: PsiBand | null, drained: boolean) {
   const dark = usePrefersDark();
   useEffect(() => {
     const s = document.documentElement.style;
@@ -39,16 +43,19 @@ function useSkyTokens(band: PsiBand | null) {
     const top = band ? (dark ? band.darkColor : band.color) : null;
     if (band && top !== null) {
       s.setProperty('--sky', top);
+      s.setProperty('--sky-band', top); // .sky.drained mixes from this; --sky can't reference itself
       s.setProperty('--sky-ink', dark ? band.darkOnColor : band.onColor);
     } else {
+      s.removeProperty('--sky-band');
       s.removeProperty('--sky'); // falls back to the neutral defaults in styles.css
       s.removeProperty('--sky-ink');
     }
     // The Android status bar takes its colour from theme-color, so keep it on the surface under it
     // (the neutral --sky from styles.css when no band is known yet).
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', top ?? getComputedStyle(document.documentElement).getPropertyValue('--sky').trim());
-  }, [band, dark]);
+    const overcast = getComputedStyle(document.documentElement).getPropertyValue('--overcast').trim();
+    if (meta) meta.setAttribute('content', top === null ? overcast : drained ? mixHex(top, overcast, 0.35) : top);
+  }, [band, dark, drained]);
 }
 
 type Props = {
@@ -59,11 +66,13 @@ type Props = {
   metrics: Record<string, number> | undefined; ts: string | null; points: HistoryPoint[] | null;
   botUrl: string | null;
   retryable?: boolean; onRetry?: () => void;
+  // The reading on screen is stale or the server is unreachable: the sky stops being the reading.
+  drained?: boolean;
   children?: ReactNode;
 };
 
-export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, locating = false, metrics, ts, points, botUrl, retryable = false, onRetry, children }: Props) {
-  useSkyTokens(band);
+export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, onScale, band, message, notice, locating = false, metrics, ts, points, botUrl, retryable = false, onRetry, drained = false, children }: Props) {
+  useSkyTokens(band, drained);
   const spec = SCALES[scale];
   const value = metrics === undefined ? undefined : spec.value(metrics);
   // One advisory line, not three. The verdict above already says what to do, so a band's terse advice is
@@ -93,7 +102,7 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
   // is never headless exactly when a new visitor arrives.
   const heroHeading = message === null && metrics !== undefined && value !== undefined && ts !== null;
   return (
-    <section className="sky" aria-label="Air quality now">
+    <section className={drained ? 'sky drained' : 'sky'} aria-label="Air quality now">
       <div className="sky-head">
         <div className="where">
           <label className="region">
@@ -133,7 +142,7 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
       {/* The page's h1 leads the DOM in every heroless state, so the outline starts at level 1
           (the picker's own h2 renders after it). */}
       {!heroHeading && <h1 className="sr-only">Singapore air quality</h1>}
-      {children}
+      {!retryable && children}
       <div className="sky-body">
         {alert && <p className="sky-badge" role="status">{alert.label} air</p>}
         {message !== null ? <>
@@ -144,11 +153,14 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
             {metrics !== undefined && <p className="hero-meta">{toggle}</p>}
           </>
           : metrics === undefined || value === undefined || ts === null ? null
-          : view === 'simple' ? <HeroSimple value={value} spec={spec} ts={ts} points={points} toggle={toggle} />
+          : view === 'simple' ? <HeroSimple value={value} spec={spec} ts={ts} points={points} toggle={toggle} advice={advice} />
           : <HeroNumbers metrics={metrics} value={value} spec={spec} ts={ts} toggle={toggle} />}
+        {/* Server down and nothing to show: say so first; the first-run picker follows. */}
+        {retryable && children}
         {/* The live region stays mounted so screen readers announce each new notice. */}
         <div role="status" aria-live="polite">{notice && <p className="quiet notice">{notice}</p>}</div>
-        {advice && <p className="sky-advice">{advice}</p>}
+        {/* Simple view sets the advice under its verdict; elsewhere it follows the reading. */}
+        {advice && !(heroHeading && view === 'simple') &&<p className="sky-advice">{advice}</p>}
         {/* The only way to be told the air turned, made findable from the page that exists to be watched. */}
         {botUrl && (
           <p className="sky-alerts">

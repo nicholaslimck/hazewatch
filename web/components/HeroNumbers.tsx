@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import { scaleFraction } from '../../shared/bands.ts';
 import { dominantPollutant } from '../../shared/verdict.ts';
-import { fmtTime } from '../../shared/format.ts';
+import { fmtWhen } from '../../shared/format.ts';
 
 const H = 130;
 const UG = 'µg/m³';
@@ -88,7 +88,7 @@ export function HeroNumbers({ metrics, value, spec, ts, toggle }: { metrics: Rec
           </div>
         );
       })}
-      <p className="hero-foot small">Updated {fmtTime(ts)}</p>
+      <p className="hero-foot small">Updated {fmtWhen(ts)}</p>
     </div>
   );
 }

@@ -5,6 +5,7 @@ export type NowResponse = {
   ts: string | null;
   ageMinutes: number | null;
   regions: Partial<Record<Region, Record<string, number>>>;
+  fromCache?: boolean; // set client-side: the service worker answered from its cache, not the server
 };
 export type HistoryPoint = { ts: string; region: Region; value: number };
 export type Range = '24h' | '7d' | '90d';
@@ -17,7 +18,11 @@ async function getJson<T>(url: string): Promise<T> {
 
 export const getConfig = () => getJson<{ publicUrl: string | null; botUrl: string | null }>('/api/config');
 
-export const getNow = () => getJson<NowResponse>('/api/now');
+export async function getNow(): Promise<NowResponse> {
+  const res = await fetch('/api/now');
+  if (!res.ok) throw new Error(`/api/now: HTTP ${res.status}`);
+  return { ...((await res.json()) as NowResponse), fromCache: res.headers.has('X-From-Cache') };
+}
 
 export async function getHistory(range: Range, metric: string, region: Region): Promise<HistoryPoint[]> {
   const q = new URLSearchParams({ range, metric, region });
