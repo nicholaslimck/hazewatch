@@ -6,5 +6,5 @@ export default defineConfig({
   plugins: [react()],
   build: { outDir: '../dist', emptyOutDir: true },
   // shared/ lives outside the web root; '..' resolves against root, i.e. the repo.
-  server: { proxy: { '/api': 'http://localhost:8080' }, fs: { allow: ['..'] } },
+  server: { proxy: { '/api/': 'http://localhost:8080' }, fs: { allow: ['..'] } },
 });
