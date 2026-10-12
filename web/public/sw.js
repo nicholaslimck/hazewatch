@@ -25,12 +25,9 @@ async function networkFirst(req) {
       (await caches.open(CACHE)).put(req, res.clone()).catch(() => {});
       return res;
     }
-    // Non-OK response: try cache before returning the error
     const hit = await caches.match(req);
-    if (hit) return hit;
-    return res; // Return the non-OK response if no cache
+    return hit ?? res;
   } catch (err) {
-    // Network error: try cache, then fallback to navigation root if needed
     const hit = await caches.match(req);
     if (hit) return hit;
     if (req.mode === 'navigate') {

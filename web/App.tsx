@@ -213,7 +213,6 @@ export function App() {
           </>
         )}
         <footer className="footer">
-          {/* The band's advisory now renders in the sky, beside the reading it explains. */}
           {scale === 'aqi' && (
             <p>
               AQI here is the US EPA index, worked out from NEA's hourly PM2.5 using NowCast, a weighted average of the last 12 hours.

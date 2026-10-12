@@ -17,8 +17,8 @@ const POLLUTANTS: { key: string; name: string; group: 'particles' | 'gases'; ind
   { key: 'co', name: 'Carbon monoxide CO', group: 'gases', index: 'co_sub_index', conc: 'co_eight_hour_max', unit: 'mg/m³' },
 ];
 
-// Two groups, never more than four rows each: the grid was one flat list of six, which is past the
-// point a reader can hold at once. Particles and gases are also the distinction the readings follow.
+// Two groups, never more than four rows each: a flat list of six is past what a reader can hold at once.
+// Particles and gases are also the distinction the readings follow.
 const GROUPS: { key: 'particles' | 'gases'; label: string }[] = [
   { key: 'particles', label: 'Particles' },
   { key: 'gases', label: 'Gases' },
@@ -61,7 +61,7 @@ export function HeroNumbers({ metrics, value, spec, ts, toggle }: { metrics: Rec
           {isNowcast ? <span className="pol-unit"> {p.unit} NowCast</span>
             : !showIndex ? <span className="pol-unit"> {p.unit}</span>
             : conc !== undefined && <span className="pol-unit"> {conc} {p.unit}</span>}
-          {/* The last hour, on both scales. It is already fetched (pm25_one_hourly) and used to be AQI-only. */}
+          {/* The last hour, on both scales. */}
           {p.key === 'pm25' && lastHour !== undefined && <span className="pol-sub">{lastHour} {p.unit} last hour</span>}
         </dd>
       </div>

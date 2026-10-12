@@ -6,8 +6,8 @@ export type PsiBand = {
 };
 
 const NORMAL = 'Normal activities';
-// Colour ramp. Good/Moderate stay as they were; the three warning bands deepen and gain
-// saturation as the air worsens, so the sky itself closes in rather than only the words changing.
+// Colour ramp. The three warning bands deepen and gain saturation as the air worsens, so the sky
+// itself closes in rather than only the words changing.
 // The bands sit far enough apart in luminance to read as steps (light theme L* 0.72 -> 0.55 -> 0.28 -> 0.08).
 const GOOD: PsiBand = { key: 'good', label: 'Good', advice: NORMAL, sensitiveNote: false,
   color: '#BFD9EE', onColor: '#1F3346', darkColor: '#1E3446', darkOnColor: '#D6E6F3', bar: '#5785AB', darkBar: '#4F7FA6' };
@@ -34,7 +34,7 @@ export const SEVERE: PsiBand = { key: 'severe', label: 'Very unhealthy', advice:
 export const PALETTES: readonly PsiBand[] = [...BANDS, SEVERE];
 
 // Appended to a band's advice when sensitiveNote is set. Lives with the band data so the sky can
-// quote it beside the reading (it used to sit in App.tsx and render only in the footer).
+// quote it beside the reading.
 export const SENSITIVE_NOTE = 'Elderly, children, pregnant women and people with heart or lung conditions should take extra care.';
 
 // Band edges: the top of each band but the last (which is open-ended). Every threshold in the app derives from these.

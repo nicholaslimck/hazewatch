@@ -16,15 +16,13 @@ const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 /** YYYY-MM-DD in UTC+8 (SGT has no DST). */
 export const sgtDate = (ms: number): string => new Date(ms + 8 * HOUR).toISOString().slice(0, 10);
 
-/** How often to poll NEA. NEA publishes each hour's reading ~15 min past the hour; the old hourly
- *  poll at :50 left the app sitting on the previous hour's reading for up to ~35 min of every hour. */
+/** How often to poll NEA. NEA publishes each hour's reading ~15 min past the hour. */
 export const POLL_MINUTES = 15;
 
 /** Ms until the next poll slot — quarter-hourly on the wall clock (:00 :15 :30 :45); in (0, interval]. */
 export function msUntilNextSlot(nowMs: number, everyMinutes: number = POLL_MINUTES): number {
   const interval = everyMinutes * 60_000;
-  const d = interval - (nowMs % interval);
-  return d > 0 ? d : d + interval;
+  return interval - (nowMs % interval);
 }
 
 export async function ingestOnce(store: Store, fetcher: Fetcher, state: IngestState): Promise<void> {

@@ -69,7 +69,7 @@ export function Sky({ region, onRegion, onLocate, onShare, view, onView, scale, 
   // One advisory line, not three. The verdict above already says what to do, so a band's terse advice is
   // dropped when the band carries its own sensitive-groups note (PSI >= Unhealthy) and the note stands in
   // its place; AQI bands have no such note, so their advice — which IS the sensitive-groups guidance —
-  // stays. The "NEA advice:" / "US EPA advice:" prefix went with the duplicate.
+  // stays.
   const advice = band ? (band.sensitiveNote ? SENSITIVE_NOTE : band.advice || null) : null;
   // Stands in for the scale's name on the hero's meta line, so it sits on the number it changes.
   // Kept on screen when this scale has no reading so the user can switch back.
