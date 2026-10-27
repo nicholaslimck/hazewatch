@@ -4,7 +4,9 @@ export type Pollutant = 'pm25' | 'pm10' | 'o3' | 'co' | 'so2';
 export const POLLUTANTS: readonly Pollutant[] = ['pm25', 'pm10', 'o3', 'co', 'so2'];
 
 // PSI band segments, drawn in sky-ink at rising opacity.
-export const SCALE = segments(PSI_EDGES, [0.18, 0.3, 0.42, 0.54, 0.66]);
+// The faintest step was 0.18 (about 1.3:1 on the sky); band edges are now carried by the tick numbers
+// under the bar, and the shading starts at 0.35 so the lowest bands still read as part of the bar.
+export const SCALE = segments(PSI_EDGES, [0.35, 0.45, 0.55, 0.65, 0.75]);
 
 // PSI's band edges plus a split at 150, where the run advice changes inside Unhealthy.
 const PSI_VERDICT_EDGES = [...PSI_EDGES, 150].sort((a, b) => a - b);
@@ -38,4 +40,30 @@ export function dominantPollutant(metrics: Record<string, number>): Pollutant | 
     if (v !== undefined && (best === null || v > metrics[`${best}_sub_index`])) best = p;
   }
   return best;
+}
+
+// NEA's PM2.5 sub-index breakpoints (µg/m³ -> PSI), read off NEA's own published pairs: they reproduce
+// 99.6% of the app's stored PM2.5 sub-indices to within 1 point.
+const PM25_PSI = [
+  { cLo: 0, cHi: 12.4, iLo: 0, iHi: 50 },
+  { cLo: 12.5, cHi: 55.4, iLo: 51, iHi: 100 },
+  { cLo: 55.5, cHi: 150.4, iLo: 101, iHi: 200 },
+  { cLo: 150.5, cHi: 250.4, iLo: 201, iHi: 300 },
+  { cLo: 250.5, cHi: 350.4, iLo: 301, iHi: 400 },
+  { cLo: 350.5, cHi: 500.4, iLo: 401, iHi: 500 },
+];
+export function pm25PsiSubIndex(c: number): number {
+  const t = Math.round(Math.max(c, 0) * 10) / 10;
+  const b = PM25_PSI.find((x) => t <= x.cHi) ?? PM25_PSI[PM25_PSI.length - 1];
+  return Math.round(((b.iHi - b.iLo) / (b.cHi - b.cLo)) * (t - b.cLo) + b.iLo);
+}
+
+// An estimate of where PSI is heading: NEA's method with the PM2.5 sub-index taken from the NowCast
+// (last 12 hours, weighted to the recent ones) instead of the 24-hour mean, and NEA's other sub-indices
+// as published. Not NEA's reading; on Jul–Oct 2026 data it reached Unhealthy a median ~6 hours before
+// NEA's PSI, but crossed in and out about three times as often, so it is shown as a line, never as the sky.
+export function psiNowcast(m: Record<string, number>): number | undefined {
+  if (m.pm25_nowcast === undefined) return undefined;
+  const others = ['pm10_sub_index', 'so2_sub_index', 'o3_sub_index', 'co_sub_index'].map((k) => m[k] ?? 0);
+  return Math.max(pm25PsiSubIndex(m.pm25_nowcast), ...others);
 }

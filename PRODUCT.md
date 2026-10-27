@@ -56,7 +56,7 @@ Not claimed / undecided:
 ## Brand Commitments
 
 - **Name:** HazeWatch.
-- **Voice:** plain, specific, unhurried. The verdict is in the reader's language, never the agency's — "Skip the long run today", not "reduce strenuous outdoor exertion". Say when something is not official, on the surface that shows it.
+- **Voice:** plain, specific, unhurried. The verdict is in the reader's language, never the agency's — "Skip the long run today", not "reduce strenuous outdoor exertion". Say when something is not official, on the same page that shows it: the hero stays uncluttered, and the caveat sits in the footer, which appears whenever the unofficial figure does.
 - **Honesty as identity:** the app would rather say "we don't know yet" or "we couldn't reach the server" than imply calm.
 
 ## Evidence on Hand
@@ -74,7 +74,7 @@ Absences future work must not fabricate: no testimonials, no benchmark or perfor
 2. **Never invent certainty.** Unknown, stale and unreachable are three different states, and each says so in words.
 3. **Honest beats reassuring.** Prefer a precise caveat over a comfortable default — including being quiet about an unknown rather than implying the air is fine.
 4. **The number stays available.** The plain-language layer is a surface, never a replacement for anyone who wants the reading behind it.
-5. **Say the boundary out loud.** Zones are not boundaries; AQI is not an official reading; the app says so where it shows them.
+5. **Say the boundary out loud.** Zones are not boundaries; AQI and the PSI estimate are not official readings; the app says so on the page that shows them (the footer for AQI and the estimate, the caption for zones), never leaving it unsaid.
 
 ## Accessibility & Inclusion
 

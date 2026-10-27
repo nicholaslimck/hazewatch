@@ -1,4 +1,4 @@
-import { BANDS, SEVERE, bandIndex, segments } from './bands.ts';
+import { BANDS, SEVERE, SENSITIVE_GROUPS, bandIndex, segments } from './bands.ts';
 import type { PsiBand } from './bands.ts';
 
 // US EPA PM2.5 breakpoints, 2024 revision (AQI Technical Assistance Document, May 2024).
@@ -36,13 +36,14 @@ export function nowcast(hours: (number | undefined)[]): number | null {
 
 // Six AQI bands, six sky palettes (PSI's five plus SEVERE).
 const base = (key: PsiBand['key']) => BANDS.find((b) => b.key === key)!;
+// EPA's AQI advice, split into the line for everyone and the line for sensitive groups, in the verdict's voice.
 const AQI_BANDS: readonly PsiBand[] = [
-  { ...base('good'), label: 'Good', advice: 'A great day to be active outside', sensitiveNote: false },
-  { ...base('moderate'), label: 'Moderate', advice: 'Unusually sensitive people: consider shorter, less intense outdoor activity', sensitiveNote: false },
-  { ...base('unhealthy'), label: 'Unhealthy for sensitive groups', advice: 'Sensitive groups: make outdoor activity shorter and less intense, and take more breaks', sensitiveNote: false },
-  { ...base('very_unhealthy'), label: 'Unhealthy', advice: 'Sensitive groups: consider moving activity indoors. Everyone else: keep outdoor activity shorter and less intense', sensitiveNote: false },
-  { ...SEVERE, label: 'Very unhealthy', advice: 'Sensitive groups: avoid all outdoor physical activity. Everyone else: limit outdoor physical activity', sensitiveNote: false },
-  { ...base('hazardous'), label: 'Hazardous', advice: 'Sensitive groups: stay indoors and keep activity light. Everyone else: avoid all outdoor physical activity', sensitiveNote: false },
+  { ...base('good'), label: 'Good', advice: 'A great day to be active outside.', sensitive: '' },
+  { ...base('moderate'), label: 'Moderate', advice: 'Fine for most people.', sensitive: 'If air pollution tends to bother you: keep outdoor exercise shorter and easier.' },
+  { ...base('unhealthy'), label: 'Unhealthy for sensitive groups', advice: 'Fine for most people.', sensitive: `${SENSITIVE_GROUPS}: keep outdoor exercise shorter and easier, and take more breaks.` },
+  { ...base('very_unhealthy'), label: 'Unhealthy', advice: 'Keep outdoor exercise shorter and easier.', sensitive: `${SENSITIVE_GROUPS}: move exercise indoors if you can.` },
+  { ...SEVERE, label: 'Very unhealthy', advice: 'Cut back on exercise outside.', sensitive: `${SENSITIVE_GROUPS}: avoid all exercise outside.` },
+  { ...base('hazardous'), label: 'Hazardous', advice: 'Avoid all exercise outside.', sensitive: `${SENSITIVE_GROUPS}: stay indoors and keep activity light.` },
 ];
 
 // Edges come from the breakpoint table: AQI index tops (50, 100, 150, 200, 300) and the PM2.5 µg/m³ where each band ends.
@@ -66,4 +67,4 @@ export function aqiVerdict(v: number): [string, string] {
   return AQI_VERDICTS[bandIndex(v, AQI_EDGES)];
 }
 
-export const AQI_SEGMENTS = segments(AQI_EDGES, [0.18, 0.3, 0.38, 0.46, 0.56, 0.66]);
+export const AQI_SEGMENTS = segments(AQI_EDGES, [0.35, 0.43, 0.51, 0.59, 0.67, 0.75]);

@@ -1,4 +1,4 @@
-import { BANDS, psiBand, PSI_EDGES, PM25_1H_EDGES, PM25_1H_NAMES } from './bands.ts';
+import { BANDS, psiBand, pm25HourBand, PSI_EDGES, PM25_1H_EDGES, PM25_1H_NAMES } from './bands.ts';
 import type { PsiBand } from './bands.ts';
 import { aqiBand, aqiVerdict, pm25ToAqi, AQI_EDGES, AQI_PM25_EDGES, AQI_SEGMENTS } from './aqi.ts';
 import { bandPosition, SCALE, verdict } from './verdict.ts';
@@ -10,6 +10,7 @@ export type ScaleSpec = {
   name: string; // "PSI" / "AQI"
   source: string; // whose advice the footer quotes
   period: string; // what the headline value averages over, shown after the scale switch
+  note: string; // why this scale can read differently from the other, said where the number is ('' when it is the reference)
   dayCaption: string;
   gridCaption: string; // header over the Numbers pollutant grid
   trendCaption: string; // what the dashed lines on the 24-hour chart mean
@@ -21,6 +22,10 @@ export type ScaleSpec = {
   segments: { from: number; to: number; opacity: number }[];
   history: { metric: string; convert(v: number): number }; // series behind the 90-day calendar
   trendLines: { v: number; label: string }[]; // PM2.5 µg/m³ where a band starts, drawn on the 24-hour chart
+  // The band an hourly PM2.5 value falls in, named in the same bands `trendLines` draws, so the chart's
+  // caption and chip can never disagree with its own dashed lines.
+  hourBand(pm25: number): string;
+  hourChip: string; // prefix on the chart chip, naming the measure when it isn't the hero's own scale
   legend: { key: PsiBand['key']; label: string }[];
   alertEdges: number[]; // the scale values where alert levels 1, 2, 3 start, in the scale's own units
 };
@@ -42,6 +47,7 @@ export const SCALES: Record<Scale, ScaleSpec> = {
     name: 'PSI',
     source: 'NEA',
     period: '24h average',
+    note: '',
     dayCaption: 'Daily mean PSI.',
     gridCaption: 'Sub-index, then concentration',
     trendCaption: "Dashed lines mark NEA's hourly PM2.5 bands.",
@@ -55,12 +61,17 @@ export const SCALES: Record<Scale, ScaleSpec> = {
     alertEdges: [100, 200, 300],
     history: { metric: 'psi_twenty_four_hourly', convert: (v) => v },
     trendLines: lines(PM25_1H_EDGES, PM25_1H_NAMES),
+    hourBand: pm25HourBand,
+    // PSI has no hourly bands, so the chart shows NEA's hourly PM2.5 ones; the chip says so rather than
+    // putting "Normal" beside a "Moderate" hero as if they were the same measure.
+    hourChip: 'NEA hourly band: ',
     legend: BANDS.map((b) => ({ key: b.key, label: b.label })),
   },
   aqi: {
     name: 'AQI',
     source: 'US EPA',
-    period: 'right now',
+    period: 'last few hours', // NowCast weighs 12 hours toward the latest; "right now" overclaimed
+    note: 'Hourly, so it moves faster than PSI.',
     dayCaption: "AQI from each day's mean PM2.5.",
     gridCaption: 'Concentrations',
     trendCaption: 'Dashed lines mark where AQI bands start.',
@@ -77,6 +88,8 @@ export const SCALES: Record<Scale, ScaleSpec> = {
     history: { metric: 'pm25_one_hourly', convert: pm25ToAqi },
     // Skip the Good/Moderate line (9 µg/m³ sits on the chart floor) and Hazardous (off the chart top in practice).
     trendLines: lines(AQI_PM25_EDGES, AQI_LEGEND.map((l) => l.label)).slice(1, 4),
+    hourBand: (c) => aqiBand(pm25ToAqi(c)).label,
+    hourChip: '',
     legend: AQI_LEGEND,
   },
 };
