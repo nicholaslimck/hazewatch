@@ -253,7 +253,8 @@ button.banner { min-height: 44px; width: 100%; text-align: left; text-decoration
 .row.selected { font-weight: 600; }
 .row { border-radius: 6px; }
 /* On wide screens a full-width track stretches small moves thin; keep the rows at reading width. */
-.rows { max-width: 520px; margin-top: 14px; } /* clear of the map caption above */
+/* Centred under the map on wide screens, the same as the map itself. */
+.rows { max-width: 520px; margin: 14px auto 0; } /* clear of the map caption above */
 /* Then and now: a hollow dot for 24 hours ago, a solid dot for now, joined on one shared scale. Built from
    positioned HTML so the dots stay round however wide the column is. */
 .tn { position: relative; height: 20px; }
@@ -269,11 +270,11 @@ button.banner { min-height: 44px; width: 100%; text-align: left; text-decoration
 .tn-delta { display: block; font-size: 12px; font-weight: 400; color: var(--muted); line-height: 1.2; }
 /* Same columns as a row: the scale under the tracks, then what the two dots mean. */
 .tn-axis {
-  display: grid; grid-template-columns: 64px 1fr 56px; gap: 10px; max-width: 520px; margin-top: 4px;
+  display: grid; grid-template-columns: 64px 1fr 56px; gap: 10px; max-width: 520px; margin: 4px auto 0;
   font-size: 12px; color: var(--muted);
 }
 .tn-axis > div { grid-column: 2; display: flex; justify-content: space-between; }
-.tn-key { display: flex; gap: 16px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.tn-key { display: flex; gap: 16px; max-width: 520px; margin: 10px auto 0; font-size: 13px; color: var(--muted); }
 .tn-key span { display: inline-flex; align-items: center; gap: 6px; }
 .tn-key .tn-then, .tn-key .tn-now { position: static; transform: none; }
 .spark-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 1px; }
