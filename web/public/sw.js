@@ -17,6 +17,13 @@ self.addEventListener('install', (e) => {
 });
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
+// A cached answer says so, so the page can tell a saved reading from a live one (X-From-Cache).
+function marked(res) {
+  const headers = new Headers(res.headers);
+  headers.set('X-From-Cache', '1');
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
 // Network first so a reading is never older than it has to be; the cache only answers when offline.
 async function networkFirst(req) {
   try {
@@ -26,10 +33,10 @@ async function networkFirst(req) {
       return res;
     }
     const hit = await caches.match(req);
-    return hit ?? res;
+    return hit ? marked(hit) : res;
   } catch (err) {
     const hit = await caches.match(req);
-    if (hit) return hit;
+    if (hit) return marked(hit);
     if (req.mode === 'navigate') {
       const rootHit = await caches.match('/');
       if (rootHit) return rootHit;

@@ -7,6 +7,7 @@
      never reads as "the air is fine" — lightness alone separates them, colour vision aside.
      App sets --sky, --sky-ink, --bar-*, --cell-* inline once a band is known. */
   --sky: #AFB9BF;
+  --overcast: #AFB9BF; /* the no-band sky, kept by name so a drained sky can mix toward it */
   --sky-ink: var(--ink);
   font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
@@ -24,6 +25,7 @@
     --muted: #8E9AA1;
     --line: #2A3136;
     --sky: #3A4249;
+    --overcast: #3A4249;
   }
 }
 
@@ -40,15 +42,15 @@ button { cursor: pointer; }
 
 /* Press and hover feedback, shared by every control, so a tap is acknowledged before anything else changes.
    Transparent controls get a faint ink wash; filled ones (calendar days, map zones) darken. */
-button, .map path[role='button'] { -webkit-tap-highlight-color: transparent; transition: background-color 120ms ease, filter 120ms ease, opacity 120ms ease; }
-:is(.locate, .row, .picker-options button, .toggle button, .scale-switch button):active:not([aria-checked='true']) { background-color: color-mix(in srgb, currentColor 16%, transparent); }
-:is(button.cell, .map path[role='button']):active { filter: brightness(0.82); }
+button, .map .zone { -webkit-tap-highlight-color: transparent; transition: background-color 120ms ease, filter 120ms ease, opacity 120ms ease; }
+:is(.locate, .row, .toggle button, .scale-switch button):active:not([aria-checked='true']) { background-color: color-mix(in srgb, currentColor 16%, transparent); }
+:is(button.cell, .map .zone):active { filter: brightness(0.82); }
 button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { opacity: 0.8; }
 @media (hover: hover) {
-  :is(.locate, .row, .picker-options button, .toggle button, .scale-switch button):hover:not([aria-checked='true']) { background-color: color-mix(in srgb, currentColor 9%, transparent); }
-  :is(button.cell, .map path[role='button']):hover { filter: brightness(0.92); }
+  :is(.locate, .row, .toggle button, .scale-switch button):hover:not([aria-checked='true']) { background-color: color-mix(in srgb, currentColor 9%, transparent); }
+  :is(button.cell, .map .zone):hover { filter: brightness(0.92); }
 }
-@media (prefers-reduced-motion: reduce) { button, .map path[role='button'] { transition: none; } }
+@media (prefers-reduced-motion: reduce) { button, .map .zone { transition: none; } }
 
 /* Locate in progress: the crosshair pulses until the browser answers. */
 .locate.locating svg { animation: locating 1s ease-in-out infinite; }
@@ -56,9 +58,9 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 @media (prefers-reduced-motion: reduce) { .locate.locating svg { animation: none; opacity: 0.5; } }
 .muted { color: var(--muted); }
 .map { display: block; width: 100%; max-width: 420px; margin: 4px auto 16px; }
-.map path { cursor: pointer; }
-.map path:focus { outline: none; } /* focus ring is drawn as an SVG overlay in RegionMap */
-.map-label { fill: var(--ink); pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.map .zone { cursor: pointer; }
+/* Zone numbers: 20 map units (about 19px on a phone, more on desktop) at 700 count as large text, so 3:1 on the fill is enough; the ink is chosen per band (--bar-label-*). */
+.map-label { fill: var(--ink); font-weight: 700; pointer-events: none; }
 .caption { font-size: 13px; color: var(--muted); margin-top: 10px; }
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -91,6 +93,17 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
   .sky { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 24px 32px 32px; }
 }
 @media (prefers-reduced-motion: reduce) { .sky { transition: none; } }
+/* Stale or offline: the sky drains toward Overcast (35% band) and takes the neutral ink, so an old
+   reading stops looking like the air outside. Neutral ink clears 5.2:1 on every drained band, both
+   schemes; the band's own ink does not (light Hazardous/Severe drop to ~3:1). Children inherit both. */
+.sky.drained {
+  --sky: color-mix(in srgb, var(--sky-band, var(--overcast)) 35%, var(--overcast));
+  --sky-ink: var(--ink);
+}
+/* The evidence drains with the sky: the map, region bars and chart chip show the same old reading, so
+   they lose their colour by the same 35% rather than vouching for it at full strength. History (the
+   90-day calendar) is not in doubt and keeps its colour. */
+.page.drained :is(.map path, .spark-dot) { filter: saturate(0.35); }
 .sky-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 /* The band's advisory sits under the reading it explains. No auto margin on the body: the sky's
    remaining height falls below the content, not above it, so the verdict is not pushed down. */
@@ -104,6 +117,10 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
   background: var(--sky-ink); color: var(--sky);
   font-size: 13px; font-weight: 600; letter-spacing: 0.01em;
 }
+/* Drained: the same pill, outlined in ink, so it reads as a record rather than the alarm. */
+.sky-badge.past { background: none; color: var(--sky-ink); box-shadow: inset 0 0 0 1px currentColor; }
+/* Under the gap heading it starts a new group, so it takes the heading's distance, not the hug above a verdict. */
+.verdict + .sky-badge { margin-top: 14px; }
 /* The Telegram alerts entry point: compact enough to read as a link rather than a button, while
    keeping a 24px target (the WCAG AA minimum). */
 .sky-alerts { margin-top: 6px; }
@@ -116,7 +133,7 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .where { display: flex; align-items: center; gap: 4px; }
 .region { position: relative; display: inline-flex; align-items: center; }
 /* Visible face hugs the name; the native select sits invisibly on top so the picker still works. */
-.region-face { display: inline-flex; align-items: center; min-height: 44px; font-size: 15px; font-weight: 600; white-space: nowrap; }
+.region-face { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 15px; font-weight: 600; white-space: nowrap; }
 .region select { position: absolute; inset: 0; width: 100%; opacity: 0; appearance: none; border: 0; cursor: pointer; font-size: 15px; }
 .region:has(select:focus-visible) .region-face { outline: 2px solid var(--sky-ink); outline-offset: 2px; border-radius: 4px; }
 .region option { color: var(--ink); background: var(--bg); }
@@ -138,32 +155,46 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 }
 .scale-switch button {
   position: relative; background: transparent; border: 0; border-radius: 999px;
-  padding: 1px 9px; font-size: 13px; font-weight: 600; line-height: 1.4;
+  padding: 1px 12px; font-size: 13px; font-weight: 600; line-height: 1.4; /* 12px sides: each label clears 44px wide */
 }
-.scale-switch button::after { content: ''; position: absolute; inset: -11px 0; } /* 44px-tall tap area */
+.scale-switch button::after { content: ''; position: absolute; inset: -12px 0; } /* 45px-tall tap area */
 .scale-switch button[aria-checked='true'] { background: var(--sky-ink); color: var(--sky); }
 .scale-switch button:focus-visible { outline: 2px solid var(--sky-ink); outline-offset: 2px; }
 :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .toggle button:focus-visible { outline-color: var(--sky-ink); }
 
 /* Heroes */
-.verdict { font-size: 36px; font-weight: 600; line-height: 1.08; letter-spacing: -0.01em; }
+.verdict { font-size: 36px; font-weight: 600; line-height: 1.08; letter-spacing: -0.01em; text-wrap: balance; }
 @media (min-width: 900px) { .verdict { font-size: 40px; } }
 .hero-meta { font-size: 17px; margin-top: 12px; }
+/* The sensitive-groups advice, set as the verdict's second voice rather than a footnote. */
+.verdict-advice { font-size: 17px; font-weight: 500; line-height: 1.4; margin-top: 12px; max-width: 40ch; }
 .hero-foot { font-size: 15px; margin-top: 12px; }
+/* Over a day old: the old verdict, kept as what was said then, under the gap heading. */
+/* Numbers view: the verdict's instruction, kept under the reading so the view never loses the answer. */
+.numbers-verdict { font-size: 20px; font-weight: 600; line-height: 1.25; margin-top: 14px; max-width: 40ch; }
+/* Stale by hours or offline: the time leads the verdict, in the advice voice, so the instruction is dated. */
+.verdict-when { display: block; font-size: 17px; font-weight: 500; letter-spacing: 0; margin-bottom: 6px; }
+.verdict-past { font-size: 17px; font-weight: 500; line-height: 1.4; margin-top: 12px; max-width: 40ch; }
 .small { font-size: 13px; }
+.nowrap { white-space: nowrap; }
 .scale { display: block; overflow: visible; }
 .scale-wrap { position: relative; margin-top: 16px; }
-/* Invisible per-segment hit areas over the bar, 40px tall so they're easy to tap. */
+/* Invisible per-segment hit areas over the bar, 44px tall so they're easy to tap. */
 .scale-hit {
   /* Sits on the bar itself. It used to reach 12px above, which overlapped the extended tap pad of the
-     PSI/AQI switch in the meta line above, so the bottom of that control opened a band tooltip. */
-  position: absolute; top: -2px; height: 32px; padding: 0;
+     PSI/AQI switch in the meta line above, so the bottom of that control opened a band tooltip. The extra
+     height goes below instead, over the foot line, which is text only. */
+  position: absolute; top: -2px; height: 44px; padding: 0;
   background: transparent; border: 0; border-radius: 6px; cursor: help;
 }
 .scale-hit:focus-visible { outline: 2px solid var(--sky-ink); outline-offset: -8px; }
+.scale-ticks { position: relative; height: 16px; margin-top: 2px; font-size: 12px; line-height: 16px; pointer-events: none; }
+.scale-ticks span { position: absolute; transform: translateX(-50%); }
+/* Opens below the bar: above it, a tapped tooltip covered the sensitive-groups line and the PSI/AQI
+   switch, the two things a reader checking a band most needs to keep in view. */
 .scale-tip {
-  position: absolute; bottom: calc(100% + 10px); z-index: 2; width: max-content; max-width: min(260px, 100%);
+  position: absolute; top: calc(100% + 10px); z-index: 2; width: max-content; max-width: min(260px, 100%);
   padding: 7px 10px; border-radius: 8px; pointer-events: none;
   background: var(--sky-ink); color: var(--sky); font-size: 13px; line-height: 1.35;
 }
@@ -173,13 +204,13 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .gauge { display: block; flex: none; overflow: visible; }
 .psi-big { font-size: 64px; font-weight: 600; line-height: 0.9; }
 .pol { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 18px; align-items: start; }
-.pol-item { opacity: 0.85; }
-.pol-item.dominant { opacity: 1; font-weight: 600; }
+/* No opacity fade on pollutant rows: at 0.85 the text fell to 4.3:1 on the Very unhealthy sky. The dominant row is set apart by weight alone. */
+.pol-item.dominant { font-weight: 600; }
 .pol dt { font-size: 12px; }
 .pol-big { font-size: 20px; }
 .pol-unit { font-size: 12px; }
 .pol-sub { display: block; font-size: 12px; }
-.pol-head { font-size: 12px; margin-top: 18px; opacity: 0.85; }
+.pol-head { font-size: 12px; margin-top: 18px; }
 .pol-head + .pol { margin-top: 8px; }
 /* Two groups, never more than four rows each. The rule under a group heading runs the full width so
    both cells read as belonging to it rather than to the column they sit in. */
@@ -201,32 +232,52 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 .quiet.retry { display: block; width: 100%; text-align: left; cursor: pointer; }
 .quiet.retry:hover { background: color-mix(in srgb, var(--ink) 6%, var(--bg)); }
 .quiet.retry:active { background: color-mix(in srgb, var(--ink) 12%, var(--bg)); }
-/* Stale data: a one-line note in the sky's own ink, not a card. It sits above the verdict, so it must
-   not out-shout it; the amber dot keeps the status colour without the card's weight. */
+/* Stale or offline: one line in the sky's own ink above the verdict. The drained sky carries the
+   weight, so the line stays text and a dot rather than a card. */
 .banner {
-  display: flex; align-items: center; gap: 7px;
-  background: none; border: 0; border-radius: 0; padding: 0;
-  font-size: 13px; line-height: 1.35;
+  display: flex; align-items: flex-start; gap: 8px;
+  background: none; border: 0; border-radius: 0; padding: 0; color: inherit;
+  font-size: 15px; line-height: 1.35;
 }
-.banner::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--bar-unhealthy, #9B7D28); }
-.picker-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.picker-options button {
-  background: transparent; border: 1px solid var(--line); border-radius: 8px;
-  min-height: 44px; padding: 0 16px;
-}
+/* Centred on the first line (15px × 1.35 ≈ 20px), so a wrapped line keeps the dot at its start. */
+.banner::before { content: ''; flex: none; width: 7px; height: 7px; margin-top: 6.5px; border-radius: 50%; background: currentColor; }
+button.banner { padding-top: 12px; }
+/* Offline: the line is the retry control. */
+button.banner { min-height: 44px; width: 100%; text-align: left; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 
 /* Around Singapore */
 .row {
-  display: grid; grid-template-columns: 64px 1fr 38px; align-items: center; gap: 8px;
-  width: 100%; min-height: 40px; padding: 0; background: transparent; border: 0; text-align: left;
+  display: grid; grid-template-columns: 64px 1fr 56px; align-items: center; gap: 10px;
+  width: 100%; min-height: 48px; padding: 0; background: transparent; border: 0; text-align: left;
 }
 .row.selected { font-weight: 600; }
 .row { border-radius: 6px; }
-.track { position: relative; height: 6px; background: var(--line); border-radius: 3px; }
-.fill { display: block; height: 100%; border-radius: 3px; }
-/* Band edges inside the narrowed bar domain, so a bar stays readable against the real scale. */
-.tick { position: absolute; top: -3px; bottom: -3px; width: 1px; background: color-mix(in srgb, var(--ink) 32%, transparent); }
-.psi { text-align: right; }
+/* On wide screens a full-width track stretches small moves thin; keep the rows at reading width. */
+.rows { max-width: 520px; margin-top: 14px; } /* clear of the map caption above */
+/* Then and now: a hollow dot for 24 hours ago, a solid dot for now, joined on one shared scale. Built from
+   positioned HTML so the dots stay round however wide the column is. */
+.tn { position: relative; height: 20px; }
+.tn::before { content: ''; position: absolute; inset: 7px 0; border-radius: 3px; background: var(--line); }
+.tn-span { position: absolute; top: 9px; height: 2px; background: var(--muted); }
+.tn-then, .tn-now { position: absolute; border-radius: 50%; transform: translateX(-50%); box-sizing: border-box; }
+.tn-then { top: 6px; width: 8px; height: 8px; border: 1.5px solid var(--muted); background: var(--bg); }
+.tn-now { top: 5px; width: 10px; height: 10px; background: var(--muted); }
+/* The row you're on reads first; the other four are context. */
+.row.selected .tn-span { top: 8.75px; height: 2.5px; background: var(--ink); }
+.row.selected .tn-then { border: 2px solid var(--ink); }
+.row.selected .tn-now { top: 4.5px; width: 11px; height: 11px; background: var(--ink); }
+.tn-delta { display: block; font-size: 12px; font-weight: 400; color: var(--muted); line-height: 1.2; }
+/* Same columns as a row: the scale under the tracks, then what the two dots mean. */
+.tn-axis {
+  display: grid; grid-template-columns: 64px 1fr 56px; gap: 10px; max-width: 520px; margin-top: 4px;
+  font-size: 12px; color: var(--muted);
+}
+.tn-axis > div { grid-column: 2; display: flex; justify-content: space-between; }
+.tn-key { display: flex; gap: 16px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.tn-key span { display: inline-flex; align-items: center; gap: 6px; }
+.tn-key .tn-then, .tn-key .tn-now { position: static; transform: none; }
+.spark-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 1px; }
+.psi { text-align: right; line-height: 1.2; }
 .no-reading { grid-column: 2 / 4; }
 
 /* Last 24 hours */
@@ -237,17 +288,16 @@ button:is(.toggle button, .scale-switch button)[aria-checked='true']:active { op
 /* Band labels sit under the plot (svg is raised above them) so the data line is never hidden by a label. */
 .chart svg { position: relative; z-index: 1; }
 .ref-label { position: absolute; left: 0; transform: translateY(-100%); padding-bottom: 1px; font-size: 12px; color: var(--muted); }
+.ref-label.below { transform: none; padding: 1px 0 0; } /* flipped under its line when the line above is too close */
 .ticks { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--muted); }
-/* The chart's "now" chip: the current band as a colour token, quiet enough to read as a label rather
-   than a second alarm. The dot reuses a band shade the map and calendar already fill with; the text
-   stays on the muted pair. The value is the caption's job, so the chip carries the band only. */
+/* The chart's "now" chip: the current band in the chart's own vocabulary, uncoloured, so it reads as a
+   label rather than a second verdict. The value is the caption's job, so the chip carries the band only. */
 .now-chip {
   display: inline-flex; align-items: center; gap: 6px; width: fit-content;
-  margin-top: 10px; padding: 2px 9px 2px 7px;
+  margin-top: 10px; padding: 2px 9px;
   border: 1px solid var(--line); border-radius: 999px;
   font-size: 12px; font-weight: 600; color: var(--muted);
 }
-.now-dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 
 /* Last 90 days */
 .cal, .months { display: grid; grid-auto-columns: 1fr; gap: 3px; }
@@ -267,9 +317,15 @@ button.cell::after { content: ''; position: absolute; inset: -3px; }
 section.loading .cal { opacity: 0.45; transition: opacity 150ms ease; }
 /* After .today so focus wins; thicker and further out so today + focus stays distinct. */
 .cell:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; z-index: 1; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+/* A grid, not a wrapping row: wrapping left the last band ("Hazardous") alone on a line at phone width. */
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
 .legend li { display: inline-flex; align-items: center; gap: 5px; }
 .swatch { width: 9px; height: 9px; border-radius: 2px; }
 
 /* Footer */
-.footer { font-size: 12px; line-height: 1.5; color: var(--muted); }
+.footer { font-size: 12px; line-height: 2; color: var(--muted); }
+/* Inline links in running text: the padding fills the 24px line box, so each link clears the 24px WCAG
+   AA target without the footer turning into a button list. */
+.footer a { padding-block: 5px; }
+/* First-run picker copy: no single word left on its own line. */
+.picker .muted { text-wrap: pretty; }

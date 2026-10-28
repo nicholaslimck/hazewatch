@@ -19,12 +19,12 @@ colors:
   ink-on-deep-haze: "#2A180A"
   ink-on-smoke-umber: "#FFF4EA"
   ink-on-burnt-haze: "#FFF3E8"
-  daylight-blue: "#5785AB"
-  sage: "#768579"
-  ochre: "#9B7D28"
-  clay: "#AB7641"
-  peat: "#7A5240"
-  burnt-clay: "#9A5F3C"
+  daylight-blue: "#5381A7"
+  sage: "#5E6C61"
+  ochre: "#6B5303"
+  clay: "#653A03"
+  peat: "#321102"
+  burnt-clay: "#532401"
   surface-dark: "#15191C"
   wet-slate-dark: "#E6EBEE"
   rain-grey-dark: "#8E9AA1"
@@ -110,7 +110,7 @@ components:
     backgroundColor: "{colors.cool-paper}"
     textColor: "{colors.wet-slate}"
     rounded: "{rounded.row}"
-    height: "40px"
+    height: "44px"
   calendar-cell:
     backgroundColor: "{colors.ochre}"
     textColor: "{colors.wet-slate}"
@@ -155,7 +155,7 @@ A haze palette: two pale start-of-day surfaces, then four progressively deeper e
 
 ### Secondary
 
-- **Daylight Blue / Sage / Ochre / Clay / Peat / Burnt Clay** (#5785AB · #768579 · #9B7D28 · #AB7641 · #7A5240 · #9A5F3C): the deeper per-band shades used for the map zones, the region bars and the 90-day calendar cells — every surface where the sky tone would be too soft at small size. They map one-to-one to the six skies. Each is deepened enough to clear **3:1 against the Fog Line track** it sits on (they were 1.58–1.84:1, invisible at the pale end), so the at-a-glance comparison the bars exist for survives low vision — hue held, lightness dropped.
+- **Daylight Blue / Sage / Ochre / Clay / Burnt Clay / Peat** (light #5381A7 · #5E6C61 · #6B5303 · #653A03 · #532401 · #321102; dark #5182A9 · #7C9181 · #B69853 · #D9A16B · #FDAB83 · #FBC6AE): the per-band mark shades for the map zones, the region-row squares and the 90-day calendar cells, one-to-one with the six skies. They are a **lightness ramp**, so bands read by depth, never by hue alone (the previous set sat at one lightness, 1.01:1 apart, which merged ochre and clay for colour-blind readers and in glare). Light: the calmest clears 3.2:1 on the Fog Line track and each worse band is 1.33:1 darker. Dark: the ramp runs the other way, calm bands dim and each worse band 1.22:1 brighter from 3.2:1 on the dark track, so a calm day stays quiet beside the sky and a bad day glows. Hues held from the skies in OKLCH, chroma eased where the gamut runs out. Map numbers sit on these fills at 20 map units / 700 (large text) in whichever page ink reads better (`labelOn`, `--bar-label-*`), with no halo. `shared/bands.test.ts` enforces the ramp.
 
 ### Neutral
 
@@ -186,18 +186,18 @@ A haze palette: two pale start-of-day surfaces, then four progressively deeper e
 ### Hierarchy
 
 - **Display** (600, clamp 36→40px, 1.08, −0.01em): the verdict in Simple view — "Hazy. Skip the long run today." This is the page's `h1` and its largest text on mobile.
-- **Headline** (600, 64px, 0.9): the reading in Numbers view, set beside a vertical band gauge.
+- **Headline** (600, 64px, 0.9): the reading in Numbers view, set beside a vertical band gauge. Under its band line sits the verdict's instruction (600, 20px, `.numbers-verdict`, "Last reading: …" when over a day old) and then the sensitive-groups advice in the Simple view's `.verdict-advice` style, before any pollutant, so switching to Numbers never loses the answer.
 - **Stat** (600, 20px, 1.2): the pollutant concentration in a Numbers row — the large figure in a dense line.
 - **Title** (600, 18px): the section headings — "Around Singapore", "Last 24 hours", "Last 90 days". Must stay clearly above body size; these headings carry the page's scan structure.
 - **Meta** (400, 17px, 1.45): the hero's number line — the reading, its band name and the scale switch, sitting directly under the verdict.
 - **Body** (400, 15px, 1.45): the base text size (`:root`).
-- **Advice** (400, 14px, 1.45): the sky's single advisory sentence, capped at 68ch.
+- **Advice** (400, 14px, 1.45): the sky's single advisory sentence, capped at 68ch. It is the band's instruction for sensitive groups (`band.sensitive`), which tightens with each band; bands without one show no advice line, since the verdict already speaks to everyone. In Simple view it sits directly under the verdict at 500, 17px, 1.4, capped at 40ch (`.verdict-advice`) — for that audience it is the verdict. The band's general advice lives in the scale tooltips. In AQI mode a second meta line says "Hourly, so it moves faster than PSI." In PSI mode that line appears only when PSI's NowCast estimate (NEA's method with the PM2.5 sub-index taken from the NowCast instead of the 24-hour mean, `psiNowcast` in `shared/verdict.ts`) sits in a worse band than NEA's reading: "Recent hours point to about 210, very unhealthy. If you're sensitive, plan to stay indoors as much as you can." (the instruction is the pointed-to band's sensitive-groups action), with the footer saying it is HazeWatch's estimate, not NEA's official PSI, and how it is made (the hero line carries no caveat of its own, by choice). It never drives the verdict, sky, badge or alerts: on Jul–Oct 2026 data it reached Unhealthy a median ~6 hours before NEA's PSI but crossed in and out about three times as often. Hidden on a stale or unreachable reading.
 - **Small** (400, 13px, 1.35): captions, region rows, the footer, and the badge and toggle segments — the floor of the scale.
 - **Label** (600, 12px, 0.06em, uppercase): group headings ("Particles", "Gases"), legends, chart reference labels.
 
 ### Named Rules
 
-**The Verdict Rule.** The `h1` is the answer in the reader's language, never the agency's. It is the verdict in Simple view and the reading in Numbers view, and **every** state renders one — first-run, loading, no-reading and offline fall back to an `sr-only` "Singapore air quality" so the outline is never headless at the moment a new visitor arrives.
+**The Verdict Rule.** The `h1` is the answer in the reader's language, never the agency's. It is the verdict in Simple view and the reading in Numbers view, and **every** state renders one — a first visit (no region yet) and a server that can't be reached show a visible "HazeWatch" heading in the display style with one line under it in the advice style ("Should you go outside? Singapore's air in plain words, from NEA's hourly readings."), so a new visitor learns what the app is; loading and no-reading for a returning visitor fall back to an `sr-only` "Singapore air quality" rather than flashing the introduction before the verdict.
 
 ## Layout
 
@@ -207,7 +207,12 @@ Base unit 8px. The page is a two-column split on desktop and a single column bel
 - **The sky** is `min-height: 60vh` and a flex column on mobile; from 900px it becomes `position: sticky; height: 100vh`, so the reading stays with the reader while the evidence scrolls.
 - **The evidence column** (`.rest`) pads 24/18 on mobile and 32/40 on desktop. Sections are separated by a 1px Fog Line rule with 24px above and below it — not by cards.
 - **≥1280px** the 24-hour chart and the 90-day calendar sit side by side (`1fr 1fr`, 32px gap). Below that they stack full width so the calendar cells keep their size. At exactly 1280 the day cells render 18px with a 24px hit area — the WCAG 2.5.8 floor — so this breakpoint is a floor, not a preference.
-- **Targets:** 44px for primary controls (locate, share, region select, picker buttons), 40px for region rows, 36px visual / 46px effective for the view toggle, and a 24px minimum everywhere including the 90-day grid. Effective size means the box plus any `::after` pad.
+- **Targets:** 44px for primary controls (locate, share, region select, map zones) and region rows; 36px visual / 46px effective for the view toggle; 44×45 effective for each PSI/AQI segment (12px side padding, `::after` pad top and bottom); 44px-tall scale-band hits whose extra height reaches down over the foot line, never up into the switch. A 24px minimum everywhere else: the 90-day grid, and footer links, which sit in running text with a 24px line box they fill. Effective size means the box plus any `::after` pad.
+- **One region picker at a time:** while the first-run picker is open, the header's region select is hidden. The picker *is* the map: zones carry their region name over the live reading ("Tap the area closest to you"), because people know where they live, not which NEA region that is. The map stays pointer-only; five off-screen buttons carry keyboard and screen-reader choice, and the focused one rings its zone (the visible focus indicator).
+- **Footer** always says what the PSI/AQI switch chooses between: PSI is NEA's official 24-hour index; AQI is the US EPA's, worked out from NEA's hourly PM2.5 by NowCast, faster and not official.
+- **Radio groups** (view, scale) follow the ARIA radio pattern: one tab stop on the checked option, arrow keys move selection and focus together.
+- **Scale bar** is one tab stop (the band the reading is in; arrows and Home/End move between bands), with the band-edge numbers printed under it at 12px so where a band starts never depends on telling two shades apart. Segment shading runs 0.35→0.75 opacity of the sky's ink; it is secondary to the ticks, not a value mark. Tooltips open below the bar, so a tapped band never covers the sensitive-groups line or the PSI/AQI switch above it.
+- **Region picks below the fold** (map or rows) scroll a phone back to the hero, so the new verdict is seen; a keyboard pick keeps its place.
 
 ### Named Rules
 
@@ -260,13 +265,13 @@ The single message surface, reused for loading, "no reading for this region", an
 
 Two pills that report mode.
 
-- **View toggle:** 36px tall, 2px padding, 13px/600 segments; the checked segment inverts to Wet Slate on the sky's ink. A `::after` pad extends the tap area to 46px while the visual stays 36px.
+- **View toggle:** rendered only when there is a reading to view. 36px tall, 2px padding, 13px/600 segments; the checked segment inverts to Wet Slate on the sky's ink. A `::after` pad extends the tap area to 46px while the visual stays 36px.
 - **Scale switch (PSI/AQI):** deliberately smaller — a 20px outline-only pill in the hero meta line, subordinate to the toggle. Its tap pad must not overlap the scale bar's hit strips; `.scale-hit` starts at `top: -2px` for exactly that reason.
 
 ### Region map & rows
 
-- **Map first.** Five hand-built SVG zones coloured by the band's marks shade (Secondary), each a focusable `role="button"` with an authored 2px stroke; selection and keyboard focus are non-interactive overlays drawn after every zone.
-- **Rows second,** compact: a ranked list under the map, 40px minimum height, a 6px track, and a band marks-shade fill on a domain that **starts and ends on a band edge** so the five regions are actually comparable. The fill clears 3:1 against the track (Marks-Clear-Three Rule); band edges inside the domain are drawn as 1px ticks, and the caption states the range.
+- **Map first.** Five hand-built SVG zones coloured by the band's marks shade (Secondary), with an authored 2px stroke and the selection drawn as an overlay after every zone. Tapping a zone switches region, but the map is pointer-only and hidden from assistive tech: the region rows are the keyboard and screen-reader route, with the same values in ranked order, so five stops aren't repeated in a second order.
+- **Rows second,** compact: a ranked list under the map (worst first), 48px minimum height, capped at 520px wide. The map answers *where is it worse now*; each row answers *which way has this region moved, and by how much*: on a Fog Line track, a hollow dot for the start of the last 24 hours joined to a solid dot for now, then a 9px band marks-shade square, today's number and the change under it ("+23", "−5"). All five share one range fitted to those values (padded, in whole tens; `sharedRange` in `web/series.ts`), labelled under the tracks, with a key naming the two times. Unselected rows are Rain Grey, the selected one ink and heavier. Each row's spoken name carries the scale and the change ("East, PSI 156, up 23 since Mon 12:00 pm"). It replaced a 24-hour line per row, which drew PSI, a 24-hour average, as five near-flat strokes.
 
 ### Numbers: gauge & pollutant grid
 
@@ -277,17 +282,18 @@ Two pills that report mode.
 
 - 90 daily cells, 4px radius, filled with the band marks shade, one tab stop for the whole grid with arrow-key movement (Home/End jump to the ends).
 - The current day carries an outer 2px ring; the selected day an inner ring, so the three states stay distinct.
-- A band legend sits beneath, because the cells encode by colour.
+- A band legend sits beneath, because the cells encode by colour. It is a grid (100px minimum columns), not a wrapping row, so no band is left alone on a line.
 
 ### Trend chart
 
-- 24-hour PM2.5 line, gaps preserved as gaps, band start lines dashed in Rain Grey and labelled, ticks below the plot so a label never covers the data.
+- 24-hour PM2.5 line, gaps preserved as gaps, band start lines dashed in Rain Grey and labelled, ticks below the plot so a label never covers the data. A line's label sits above it; when the line above is too close it flips below its own line, and is dropped only when there's no room either way (`placeLabels` in `web/labels.ts`).
+- The caption and the uncoloured chip name the latest hour's band in the same bands the dashed lines draw (`spec.hourBand`): AQI's own bands in AQI mode; in PSI mode NEA's hourly PM2.5 bands, with the chip reading "NEA hourly band: …" so it isn't taken for the 24-hour PSI band.
 
 ### Named Rules
 
 **The One Alarm Rule.** The band badge is the only element in the hero permitted to look like an alarm. If something else starts looking urgent, it is wrong.
 
-**The Card-Is-A-Message Rule.** Only the quiet card and the region picker are cards. Sections are separated by hairlines, not by wrapping them in boxes.
+**The Card-Is-A-Message Rule.** Only the quiet card and the region picker are cards, and never both at once: the first-run picker waits until the server answers, since a region it can't serve would still show nothing. The stale line appears only over a reading actually on screen. Sections are separated by hairlines, not by wrapping them in boxes.
 
 ## Do's and Don'ts
 
@@ -296,17 +302,18 @@ Two pills that report mode.
 - **Do** keep the badge and the sky colour in agreement by keying the badge on the band (`isWarningBand`), not on the alert edge.
 - **Do** re-check the ink/surface contrast pair when any band colour changes; the floor is 4.63:1 and most pairs run 7–10:1.
 - **Do** keep a value-encoding mark at least 3:1 against the track it sits on, not just the page.
+- **Do** say what happened when Share has no share sheet (most desktops): the picture downloads, the caption and link go to the clipboard, and a notice says both.
 - **Do** keep the neutral no-band sky darker than the Good band.
-- **Do** state the scale's real range in place when bars are drawn on a narrowed domain ("The bars share one scale, 100–200").
+- **Do** state the scale's real range in place when marks are drawn on a narrowed domain ("on one scale for all five (100–200; hairlines mark band edges)").
 - **Do** name the action and the recovery in errors: "Can't reach the server right now. Last update 2:00 pm. Tap to retry."
 - **Do** render an `h1` in every state, even when it has to be `sr-only`, and keep it first in the DOM so the outline starts at level 1.
-- **Do** keep every state honest and distinct: unknown, no reading, stale (>120 min) and offline are four different screens.
+- **Do** keep every state honest and distinct: unknown, no reading, stale (>120 min) and offline are four different screens. Stale, and offline with a reading still on screen, **drain the sky** (`.sky.drained`: 35% band mixed into Overcast, neutral ink) and add one line above the verdict saying why and when ("Sun 9:00 pm" once the reading is from another day, "Tue 13 Oct, 11:00 am" past six days) and how old it is. Offline, that line is the retry control. A drained hero speaks in the past tense: the badge is outlined and reads "{Band} at last reading", the verdict is dated ("At 11:00 am:" above it, 17px/500, `.verdict-when`; inline in Numbers view), the trend sentence goes, and the foot says "Reading from …". A fresh foot ends with when the next hourly reading is due ("Next around 12pm."); times never wrap before am/pm. Share is hidden once a reading is over a day old. Over a day old, the gap is the h1 ("No reading from NEA since Tue 13 Oct.") and the old verdict drops to a "Last reading:" line. The evidence drains too: map and region-row squares at `saturate(0.35)`, the Regions caption dated, the chart's right tick and caption a time rather than "now" (offline too, not only stale). Over a day old, the evidence headings say when they end ("24 hours to Tue 13 Oct", "90 days to Tue 13 Oct"). Missing hours in a line are said in its caption ("No data 6pm–10pm."), so a break reads as missing data, not a drawing fault.
 - **Do** use tabular numerals for every figure.
 
 ### Don't:
 
 - **Don't** introduce a traffic-light red/orange/green, or a new colour for a new severity state.
-- **Don't** use a coloured `border-left` or `border-right` above 1px on any card, row or alert — the stale banner is one line of text and a 6px dot for exactly this reason.
+- **Don't** use a coloured `border-left` or `border-right` above 1px on any card, row or alert — the stale banner is one line of text and a 7px dot for exactly this reason.
 - **Don't** add shadows, glows, gradients or glass; depth is tonal.
 - **Don't** centre or bottom-anchor the hero in the sky's leftover height.
 - **Don't** add a kicker or eyebrow above a heading.

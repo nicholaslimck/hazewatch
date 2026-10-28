@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import { scaleFraction } from '../../shared/bands.ts';
 import { dominantPollutant } from '../../shared/verdict.ts';
-import { fmtTime } from '../../shared/format.ts';
+import { fmtHour, fmtWhen } from '../../shared/format.ts';
 
 const H = 130;
 const UG = 'µg/m³';
@@ -37,8 +37,9 @@ function Gauge({ value, segments }: { value: number; segments: ScaleSpec['segmen
   );
 }
 
-export function HeroNumbers({ metrics, value, spec, ts, toggle }: { metrics: Record<string, number>; value: number; spec: ScaleSpec; ts: string; toggle: ReactNode }) {
+export function HeroNumbers({ metrics, value, spec, ts, toggle, note, advice, drained = false, old = false }: { metrics: Record<string, number>; value: number; spec: ScaleSpec; ts: string; toggle: ReactNode; note: string; advice: string | null; drained?: boolean; old?: boolean }) {
   const v = Math.round(value);
+  const Big = old ? 'p' : 'h1'; // over a day old, Sky's gap heading is the h1
   // Same pollutants in the same order in both modes. PSI leads each row with its sub-index; AQI is PM2.5 only,
   // so its PM2.5 row leads with the NowCast and the other rows lead with their concentration.
   const dominant = spec.subIndices ? dominantPollutant(metrics) : 'pm25';
@@ -57,7 +58,7 @@ export function HeroNumbers({ metrics, value, spec, ts, toggle }: { metrics: Rec
       <div key={p.key} className={p.key === dominant ? 'pol-item dominant' : 'pol-item'}>
         <dt>{p.name}</dt>
         <dd>
-          <span className="pol-big">{showIndex ? Math.round(big) : big}</span>
+          <span className="pol-big">{showIndex || isNowcast ? Math.round(big) : big}</span>
           {isNowcast ? <span className="pol-unit"> {p.unit} NowCast</span>
             : !showIndex ? <span className="pol-unit"> {p.unit}</span>
             : conc !== undefined && <span className="pol-unit"> {conc} {p.unit}</span>}
@@ -72,10 +73,14 @@ export function HeroNumbers({ metrics, value, spec, ts, toggle }: { metrics: Rec
       <div className="n-top">
         <Gauge value={v} segments={spec.segments} />
         <div>
-          <h1 className="psi-big">{v}</h1>
+          <Big className="psi-big">{v}</Big>
           <p className="hero-meta">{toggle} {spec.period}, {spec.band(v).label.toLowerCase()}</p>
         </div>
       </div>
+      {/* The answer survives the switch to numbers: what to do, then the sensitive-groups line, before any pollutant. */}
+      <p className="numbers-verdict">{old ? 'Last reading: ' : drained ? `At ${fmtWhen(ts)}: ` : ''}{spec.verdict(v)[1]}</p>
+      {advice && <p className="verdict-advice">{advice}</p>}
+      {note && <p className="hero-meta">{note}</p>}
       {dominantName && <p className="hero-meta">Set by {dominantName[0].toLowerCase() + dominantName.slice(1)}</p>}
       <p className="pol-head">{spec.gridCaption}</p>
       {GROUPS.map((g) => {
@@ -88,7 +93,10 @@ export function HeroNumbers({ metrics, value, spec, ts, toggle }: { metrics: Rec
           </div>
         );
       })}
-      <p className="hero-foot small">Updated {fmtTime(ts)}</p>
+      <p className="hero-foot small">
+        {drained ? 'Reading from ' : 'Updated '}<span className="nowrap">{fmtWhen(ts)}</span>
+        {!drained && <>. Next around <span className="nowrap">{fmtHour(new Date(Date.parse(ts) + 3600_000).toISOString())}</span>.</>}
+      </p>
     </div>
   );
 }

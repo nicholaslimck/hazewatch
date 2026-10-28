@@ -1,13 +1,13 @@
-import { useState } from 'react';
 import { REGIONS } from '../../shared/types.ts';
 import type { Region } from '../../shared/types.ts';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import type { NowResponse } from '../api.ts';
-import { regionName } from '../../shared/format.ts';
 import { MAP } from '../map.ts';
+import { regionName } from '../../shared/format.ts';
 
-export function RegionMap({ now, selected, onPick, spec }: { now: NowResponse; selected: Region; onPick: (r: Region) => void; spec: ScaleSpec }) {
-  const [focused, setFocused] = useState<Region | null>(null);
+// `named`: zones carry their region name above the number (the first-run picker, where names aren't known yet).
+// `focused`: a zone to ring as the keyboard focus indicator, when an off-screen control stands in for it.
+export function RegionMap({ now, selected, onPick, spec, named = false, focused = null }: { now: NowResponse; selected: Region | null; onPick: (r: Region) => void; spec: ScaleSpec; named?: boolean; focused?: Region | null }) {
   const values = new Map<Region, number | undefined>(
     REGIONS.map((r) => {
       const m = now.regions[r];
@@ -17,8 +17,10 @@ export function RegionMap({ now, selected, onPick, spec }: { now: NowResponse; s
   );
   return (
     <>
-      <svg viewBox={MAP.viewBox} className="map">
-        {/* DOM/tab order stays fixed; selected + focus rings are non-interactive overlays drawn after all zones. */}
+      {/* Pointer-only: the region rows below are the keyboard and screen-reader way to switch, with the same
+          values in ranked order, so the map stays out of the tab order instead of repeating five stops in a
+          different order. */}
+      <svg viewBox={MAP.viewBox} className="map" aria-hidden="true">
         {REGIONS.map((r) => {
           const v = values.get(r);
           const band = v === undefined ? undefined : spec.band(v);
@@ -29,35 +31,27 @@ export function RegionMap({ now, selected, onPick, spec }: { now: NowResponse; s
               fill={band ? `var(--bar-${band.key})` : 'var(--line)'}
               stroke="var(--bg)"
               strokeWidth={2}
-              role="button"
-              tabIndex={0}
-              aria-label={v === undefined || !band ? `${regionName(r)}, no reading` : `${regionName(r)}, ${spec.name} ${v}, ${band.label.toLowerCase()}`}
-              aria-pressed={r === selected}
+              className="zone"
               onClick={() => onPick(r)}
-              onFocus={(e) => { if (e.currentTarget.matches(':focus-visible')) setFocused(r); }}
-              onBlur={() => setFocused(null)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onPick(r);
-                }
-              }}
             />
           );
         })}
-        <path d={MAP.zones[selected]} fill="none" stroke="var(--ink)" strokeWidth={2.5} pointerEvents="none" aria-hidden="true" />
+        {selected && <path d={MAP.zones[selected]} fill="none" stroke="var(--ink)" strokeWidth={2.5} pointerEvents="none" />}
         {focused && (
           <>
-            <path d={MAP.zones[focused]} fill="none" stroke="var(--ink)" strokeWidth={5} pointerEvents="none" aria-hidden="true" />
-            <path d={MAP.zones[focused]} fill="none" stroke="var(--bg)" strokeWidth={1.5} pointerEvents="none" aria-hidden="true" />
+            <path d={MAP.zones[focused]} fill="none" stroke="var(--ink)" strokeWidth={5} pointerEvents="none" />
+            <path d={MAP.zones[focused]} fill="none" stroke="var(--bg)" strokeWidth={1.5} pointerEvents="none" />
           </>
         )}
         {REGIONS.map((r) => {
           const v = values.get(r);
           const [x, y] = MAP.labels[r];
+          const band = v === undefined ? undefined : spec.band(v);
+          // Large (3:1 is the bar) and in whichever ink reads on the zone's fill, so no halo is needed.
           return (
-            <text key={r} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize={13} className="map-label" aria-hidden="true">
-              {v === undefined ? '–' : v}
+            <text key={r} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize={20} className="map-label"
+              style={{ fill: band ? `var(--bar-label-${band.key})` : 'var(--ink)' }}>
+              {named ? <><tspan x={x} dy="-0.6em">{regionName(r)}</tspan><tspan x={x} dy="1.2em">{v === undefined ? '–' : v}</tspan></> : v === undefined ? '–' : v}
             </text>
           );
         })}

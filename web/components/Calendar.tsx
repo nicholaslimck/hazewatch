@@ -4,13 +4,14 @@ import type { Region } from '../../shared/types.ts';
 import type { ScaleSpec } from '../../shared/scale.ts';
 import { useHistory } from '../api.ts';
 import type { HistoryPoint } from '../api.ts';
-import { fmtDay, todaySgt } from '../../shared/format.ts';
+import { fmtDate, fmtDay, todaySgt } from '../../shared/format.ts';
 import { buildCells, defaultFocusIndex, isFocusable, monthLabels, stepFocus } from '../calendar.ts';
 
 // Arrow keys move one day (up/down) or one week to the same weekday (left/right) across the grid.
 const STEP: Record<string, number> = { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 };
 
-export function Calendar({ region, tick, spec }: { region: Region; tick: number; spec: ScaleSpec }) {
+// `until`: set when the newest reading is over a day old, so the heading says when the 90 days end.
+export function Calendar({ region, tick, spec, until = null }: { region: Region; tick: number; spec: ScaleSpec; until?: string | null }) {
   const fresh = useHistory('90d', spec.history.metric, region, tick);
   // While a new region or scale loads, keep drawing the last grid (dimmed) with the spec it was drawn with,
   // so the page doesn't collapse and jump.
@@ -52,7 +53,7 @@ export function Calendar({ region, tick, spec }: { region: Region; tick: number;
 
   return (
     <section aria-labelledby="cal-title" aria-busy={loading} className={loading ? 'loading' : undefined}>
-      <h2 id="cal-title">Last 90 days</h2>
+      <h2 id="cal-title">{until ? `90 days to ${fmtDate(until)}` : 'Last 90 days'}</h2>
       <div
         className="cal"
         role="group"

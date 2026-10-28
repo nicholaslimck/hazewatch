@@ -42,3 +42,16 @@ test('dominantPollutant', () => {
   assert.equal(dominantPollutant({}), null);
   assert.equal(dominantPollutant({ pm25_one_hourly: 50 }), null);
 });
+test('NEA PM2.5 sub-index breakpoints', async () => {
+  const { pm25PsiSubIndex, psiNowcast } = await import('./verdict.ts');
+  // Pairs NEA published: 24h PM2.5 11 -> 44, 12 -> 48; band edges.
+  assert.equal(pm25PsiSubIndex(11), 44);
+  assert.equal(pm25PsiSubIndex(12), 48);
+  assert.equal(pm25PsiSubIndex(55.4), 100);
+  assert.equal(pm25PsiSubIndex(55.5), 101);
+  assert.equal(pm25PsiSubIndex(150.5), 201);
+  // The highest sub-index wins, as in NEA's PSI.
+  assert.equal(psiNowcast({ pm25_nowcast: 80, o3_sub_index: 30 }), pm25PsiSubIndex(80));
+  assert.equal(psiNowcast({ pm25_nowcast: 5, o3_sub_index: 60 }), 60);
+  assert.equal(psiNowcast({ o3_sub_index: 60 }), undefined);
+});
